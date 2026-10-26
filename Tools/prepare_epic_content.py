@@ -38,7 +38,7 @@ def clean(package):
     data = registry.get_asset_by_object_path(package + '.' + package.rsplit('/', 1)[-1])
     if str(data.asset_class_path.asset_name) == 'PhysicsAsset':
         asset = unreal.load_asset(package)
-        unreal.DrSampleContent.clean_physics(asset)
+        unreal.DsSampleContent.clean_physics(asset)
         if not unreal.EditorAssetLibrary.save_loaded_asset(asset, False):
             raise RuntimeError('물리 에셋 정리 저장 실패: ' + package)
         registry.scan_files_synchronous([str(ROOT / 'Content' / filename(package))], True)
@@ -48,7 +48,7 @@ def clean(package):
     asset = unreal.load_asset(package)
     if not asset:
         raise RuntimeError('애니메이션 로드 실패: ' + package)
-    removed = unreal.DrSampleContent.clean_animation(asset)
+    removed = unreal.DsSampleContent.clean_animation(asset)
     if removed:
         if not unreal.EditorAssetLibrary.save_loaded_asset(asset, False):
             raise RuntimeError('애니메이션 정리 저장 실패: ' + package)
