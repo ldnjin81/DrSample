@@ -101,7 +101,7 @@ UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-Dr
 저장소에는 코드, 샘플 BP·맵·입력·몽타주·DataAsset과 구운 테이블이 들어 있다. Epic 원본 메시·시퀀스·머티리얼은 각자 설치한 **Lyra Starter Game**에서 가져온다. 원래 패키지 경로(`Content/Characters/`, `Content/Effects/`, `Content/PhysicsMaterials/`)로 복사하며 이 폴더는 Git에서 제외한다.
 
 1. UE 5.8.2에서 `DrSampleEditor Win64 Development`를 빌드한다.
-2. 에디터를 닫고 Lyra 콘텐츠를 가져온다. 도구는 고정 목록의 115개 에셋을 복사하고 복사본에서 Lyra 전용 참조를 정리한다. Lyra 프로젝트는 바꾸지 않는다.
+2. 에디터를 닫고 Lyra 콘텐츠를 가져온다. 도구는 고정 목록의 117개 에셋을 복사하고 복사본에서 Lyra 전용 참조를 정리한다. Lyra 프로젝트는 바꾸지 않는다.
 
 ```powershell
 .\Tools\import_epic_content.ps1 -LyraPath 'C:\Project\EpicSample\LyraStarterGame'
@@ -119,6 +119,8 @@ UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-Dr
 
 플레이어 Manny와 적 Quinn이 이동·대시 회피·근접 공격·추적·피격·사망을 보여 준다. 사운드·별도 FX·메뉴 콘텐츠는 없어서 해당 기능은 대체 동작을 쓴다.
 
+피격 반응은 피격자 기준 공격자가 있는 앞·뒤·좌·우 몽타주를 선택한다. 방향 경계와 실제 BP 연결을 자동화로 검증하며, 렌더링 BasicCombat 캡처는 테스트 카메라 하나로 두 캐릭터를 측면에서 함께 보여 준다. 콘텐츠 생성 도구는 넓은 바닥과 네 방향 피격 에셋 연결을 재현한다. 기본 충격광은 80cd·250cm·.12초다.
+
 ## 검증
 
 UE 5.8.2 기준 현재 상태:
@@ -126,13 +128,13 @@ UE 5.8.2 기준 현재 상태:
 | 검증 | 결과 |
 | --- | --- |
 | `DrSampleEditor Win64 Development` 빌드 | 성공 |
-| `Automation RunTests DrFramework+DrSample` | 72/72 성공(기반 5, 샘플 67, PIE `DrSample.PIE.BasicCombat` 포함) |
+| `Automation RunTests DrFramework+DrSample` | 73/73 성공(기반 5, 샘플 68, PIE `DrSample.PIE.BasicCombat` 포함) |
 
 플러그인 단독 검증은 [DrFramework 저장소](https://github.com/ldnjin81/DrFramework)의 `Tools/verify.ps1`이 맡는다.
 
 ```powershell
 & '<UE_5.8>\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' '<저장소>\DrSample.uproject' `
-  '-ExecCmds=Automation List; Automation RunTests DrFramework+DrSample' `
+  '-ExecCmds=Automation List; RunTests DrFramework+DrSample' `
   '-TestExit=Automation Test Queue Empty' -nullrhi -unattended -log
 ```
 

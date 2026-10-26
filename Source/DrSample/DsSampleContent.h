@@ -24,6 +24,9 @@ public:
  virtual void BeginPlay() override;
  virtual void Tick(float DeltaSeconds) override;
  UPROPERTY(EditDefaultsOnly, Category="샘플") TObjectPtr<UAnimMontage> HitMontage;
+ UPROPERTY(EditDefaultsOnly, Category="샘플") TObjectPtr<UAnimMontage> HitBackMontage;
+ UPROPERTY(EditDefaultsOnly, Category="샘플") TObjectPtr<UAnimMontage> HitLeftMontage;
+ UPROPERTY(EditDefaultsOnly, Category="샘플") TObjectPtr<UAnimMontage> HitRightMontage;
 private:
  void OnSampleDamaged(float Damage, AActor* InstigatorActor, AActor* Causer);
  float ReactionRemaining = 0.f;

@@ -8,7 +8,16 @@
 - 아래 #64 기록의 `DrSampleContent`·`ADrSampleEnemy`·`DrTestFixture.h` 같은 이름은 #64 당시 이름이다. 지금 이름은 위와 같고, 테스트 픽스처는 샘플 `Source/DrSample/Tests/DsTestFixture.h`, 기반 `Plugins/DrFramework/Source/DrFramework/Tests/DrTestWorld.h`·`DrTableTestFixture.h`다.
 - 이후(같은 날) Abilities·캐릭터 골격·상태 효과·GameAssets·EffectDefs도 샘플로 옮겼다. 기반 ASC·어빌리티·캐릭터는 Ds 클래스와 합쳤고, 테이블 에셋은 Ds 클래스로 `-Force` 재굽기했다. 샘플 BP는 재생성 없이 그대로 동작했다. DrTableSystem은 git 서브모듈이 됐다. 전체 자동화 72/72.
 - 저장소 분리(10/27): 이 저장소(DrSample)는 샘플 프로젝트이고 DrFramework는 플러그인 전용 저장소의 서브모듈이다. 프로젝트 파일은 `DrSample.uproject`.
-- 남은 일: 렌더링 캡처(셰이더 작업 폴더 권한 문제), 피격 방향 4종 선택(#849), 메뉴·사운드·FX 콘텐츠.
+- 작업 #68에서 #849의 앞/뒤/좌/우 피격 선택을 플레이어·적 모두 반영했다. 순수 방향 판정 경계 테스트와 실제 BP 몽타주 재생 검증, 테스트 전용 측면 카메라, 기본 충격광 완화, 바닥 확장도 추가했다. Lyra 좌/우 경량 피격 시퀀스를 포함한 가져오기 목록은 117개다.
+- 남은 콘텐츠: 메뉴·사운드·별도 FX 콘텐츠.
+
+### 작업 #68 검증 결과
+
+- `Saved/task68-build-final.log`: DrSampleEditor Win64 Development, `Result: Succeeded`.
+- `Saved/task68-tests-pass.log`: DrFramework+DrSample 73/73 성공, 실패 0. 경계각·회전·높이 테스트와 실제 BP의 플레이어·적 4방향, 플레이어 포이즈 붕괴 방향별 몽타주 재생 검사 포함.
+- `Saved/task68-render-final.log`: RenderOffscreen BasicCombat 1/1 성공. `Saved/Screenshots/DrSample/01_idle.png`·`02_attack_hit.png`·`03_player_hit.png`·`04_death.png` 모두 새로 생성·육안 확인. 두 캐릭터가 함께 보이며 피격 과노출·바닥 가장자리 검은 띠·카메라 화면비 여백 없음. 실행 인자는 1280×720이지만 PIE 뷰포트 캡처의 실제 PNG는 1009×341이다.
+- 가져오기 117개·샘플 생성 커맨드릿은 오류 0건. 캡처·콘텐츠 생성은 GUI 실행 없이 Cmd로 수행했다.
+- 체크리스트 명령의 두 번째 `Automation` 접두사는 UE 파서에서 잘못된 하위 명령이 되어 0건 실행됐다. 실제 검증은 `-ExecCmds="Automation List; RunTests DrFramework+DrSample"`로 수행했다(ask-claude에 진행: 계속으로 공유).
 
 ## 작업 #64 기록
 
@@ -36,7 +45,7 @@
 
 ### 프레임워크 후보 기능과 후속 확인
 
-현재 ADrBossCharacter의 일반 피해 처리는 페이즈 검사만 하며 일반 피격 연출이 없다. 공용 전투 구조를 바꾸지 않기 위해 ADrSampleEnemy의 일반 피해 델리게이트에서 피격 몽타주를 재생했다(#849 A 승인). 현 구현은 앞 방향만 연결되어 있어 **#849의 앞/뒤/좌/우 선택은 아직 미반영**이다. #855 축소에 따라 더 구현하지 않고 후속 작업에 넘긴다. 현재 사망한 적은 피격 몽타주를 재생하지 않는다. 보스 공격·사망은 기존 시퀀스 경로다.
+당시 ADrBossCharacter의 일반 피해 처리는 페이즈 검사만 하며 일반 피격 연출이 없었다. 샘플 일반 피해 델리게이트에서 자체 피격 몽타주를 재생했다(#849 A 승인). #64 당시 정면만 연결했던 부분은 **작업 #68에서 ADsSampleEnemy·ADsCharacter의 앞/뒤/좌/우 선택으로 반영 완료**했다. 사망한 적은 피격 몽타주를 재생하지 않으며 보스 공격·사망은 기존 시퀀스 경로를 유지한다.
 
 추가 검토: 실제 키보드 WASD modifier 저장 상태, NavMeshBoundsVolume의 브러시/내비 데이터와 렌더링 장면을 확인한다. NullRHI 이동 테스트는 EnhancedInput의 Move 액션을 주입하며 데스크톱 키를 주입하지 않는다.
 

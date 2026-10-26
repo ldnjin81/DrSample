@@ -8,6 +8,9 @@
 #include "Characters/DsCharacter.h"
 #include "Core/DsGameplayTags.h"
 #include "Animation/AnimSingleNodeInstance.h"
+#include "Animation/AnimMontage.h"
+#include "Camera/CameraActor.h"
+#include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Editor.h"
 #include "EngineUtils.h"
@@ -47,6 +50,41 @@ private:
   FScreenshotRequest::RequestScreenshot(Path, false, false);
   return true;
  }
+ void FrameActors(UWorld* World, APlayerController* PC, ADsCharacter* Player, ADsSampleEnemy* Enemy) {
+  if (!Camera.IsValid()) Camera = World->SpawnActor<ACameraActor>();
+  const FVector Center = (Player->GetActorLocation() + Enemy->GetActorLocation()) * .5f;
+  const float Distance = FMath::Max(650.f, FVector::Dist2D(Player->GetActorLocation(), Enemy->GetActorLocation()) * 1.6f);
+  const FVector Location = Center + FVector(-.35f, -1.f, .65f).GetSafeNormal() * Distance;
+  Camera->SetActorLocationAndRotation(Location, (Center - Location).Rotation());
+  Camera->GetCameraComponent()->FieldOfView = 55.f;
+  Camera->GetCameraComponent()->bConstrainAspectRatio = false;
+  Camera->GetCameraComponent()->PostProcessSettings.bOverride_MotionBlurAmount = true;
+  Camera->GetCameraComponent()->PostProcessSettings.MotionBlurAmount = 0.f;
+  PC->SetViewTarget(Camera.Get());
+ }
+ void CheckDirections(ADsCharacter* Player, ADsSampleEnemy* Enemy, USkeletalMeshComponent* Visible) {
+  const FTransform PlayerStart = Player->GetActorTransform(), EnemyStart = Enemy->GetActorTransform();
+  const TCHAR* Names[] = {TEXT("Front"), TEXT("Back"), TEXT("Left"), TEXT("Right")};
+  const FVector Directions[] = {FVector(1,0,0), FVector(-1,0,0), FVector(0,-1,0), FVector(0,1,0)};
+  for (int32 Index = 0; Index < 4; ++Index) {
+   auto* Montage = LoadObject<UAnimMontage>(nullptr, *FString::Printf(TEXT("/Game/DrSample/Animations/AM_DrSample_Hit%s"), Names[Index]));
+   Player->SetActorRotation(FRotator::ZeroRotator);
+   Enemy->SetActorLocation(Player->GetActorLocation() + Directions[Index] * 250.f);
+   Player->GetAttributeSet()->OnDamaged.Broadcast(1.f, Enemy, Enemy);
+   Test->TestTrue(FString::Printf(TEXT("플레이어 %s 몽타주 재생"), Names[Index]), Montage && Visible->GetAnimInstance()->Montage_IsPlaying(Montage));
+   Player->GetAttributeSet()->OnPoiseBroken.Broadcast(Enemy, Enemy);
+   Test->TestTrue(FString::Printf(TEXT("플레이어 포이즈 붕괴 %s 몽타주 재생"), Names[Index]), Montage && Visible->GetAnimInstance()->Montage_IsPlaying(Montage));
+   CastChecked<UDsAbilitySystemComponent>(Player->GetAbilitySystemComponent())->SetLooseState(DsTags::State_Staggered, false);
+   Enemy->SetActorRotation(FRotator::ZeroRotator);
+   Player->SetActorLocation(Enemy->GetActorLocation() + Directions[Index] * 250.f);
+   Enemy->GetAttributes()->OnDamaged.Broadcast(1.f, Player, Player);
+   Test->TestTrue(FString::Printf(TEXT("적 %s 몽타주 재생"), Names[Index]), Montage && Enemy->GetMesh()->GetAnimInstance()->Montage_IsPlaying(Montage));
+   Test->AddInfo(FString::Printf(TEXT("4방향 재생 검증: 플레이어·적 %s → %s"), Names[Index], *GetNameSafe(Montage)));
+  }
+  Visible->GetAnimInstance()->Montage_Stop(0.f);
+  Enemy->GetMesh()->GetAnimInstance()->Montage_Stop(0.f);
+  Player->SetActorTransform(PlayerStart); Enemy->SetActorTransform(EnemyStart);
+ }
  FAutomationTestBase* Test;
  int32 Stage = 0, Frames = 0, Total = 0;
  FVector Start;
@@ -55,6 +93,7 @@ private:
  double PreviousDelta = 0;
  bool bStarted = false;
  bool bEnemyReaction = false, bPlayerReaction = false;
+ TWeakObjectPtr<ACameraActor> Camera;
 };
 bool FBasicCombat::Update() {
  if (!bStarted) {
@@ -78,10 +117,12 @@ bool FBasicCombat::Update() {
   if (Mesh->GetFName() == TEXT("MannyMesh")) Visible = Mesh;
  if (!Visible || !Visible->GetAnimInstance() || !Input || !Move)
   return Finish(TEXT("샘플 메시·애님 BP·입력 연결 누락"));
+ FrameActors(World, PC, Player, Enemy);
  switch (Stage) {
  case 0:
   Brain->SetEngageAllowed(false); Brain->SetRandomSeed(64);
-  if (Frames < 64) return false;
+  if (Frames == 1) CheckDirections(Player, Enemy, Visible);
+  if (Frames < 128) return false;
   Start = Player->GetActorLocation();
   Shot(TEXT("01_idle.png")); Next(TEXT("대기와 애님 BP")); break;
  case 1:
@@ -131,11 +172,14 @@ bool FBasicCombat::Update() {
    Test->TestTrue(TEXT("d: 적 사망 상태"), Brain->GetState() == EDsBossState::Dead);
    auto* Single = Enemy->GetMesh()->GetSingleNodeInstance();
    Test->TestTrue(TEXT("d: 적 사망 애니메이션"), Single && Single->GetCurrentAsset() && Single->GetCurrentAsset()->GetName().Contains(TEXT("Death")));
-   Shot(TEXT("04_death.png")); Next(TEXT("d 사망"));
+   Next(TEXT("d 사망"));
   } else if (Frames > 192) return Finish(TEXT("d: 적이 사망하지 않음"));
   break;
  case 7:
   if (Frames < 32) return false;
+  Shot(TEXT("04_death.png")); Next(TEXT("사망 포즈 캡처")); break;
+ case 8:
+  if (Frames < 8) return false;
   return Finish();
  }
  return false;

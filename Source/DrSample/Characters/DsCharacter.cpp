@@ -1,4 +1,5 @@
 #include "Characters/DsCharacter.h"
+#include "Combat/DsHitDirection.h"
 #include "Combat/DsPlayerCombatData.h"
 #include "Combat/DsCombatFXComponent.h"
 
@@ -317,22 +318,21 @@ void ADsCharacter::HandleDamaged(float Damage, AActor *DamageInstigator,
   if (Damage <= 0.f || !AbilitySystem || IsMoveInputBlocked())
     return;
   // 전투 동작 중에는 그 모션을 끊지 않도록 피격 모션을 생략한다.
-  const AActor *Attacker = Causer ? Causer : DamageInstigator;
-  const bool bFromBack =
-      Attacker && FVector::DotProduct(GetActorForwardVector(),
-                                      (Attacker->GetActorLocation() -
-                                       GetActorLocation())
-                                          .GetSafeNormal2D()) < 0.f;
-  PlayCombatMontage(bFromBack ? HitReactBackMontage : HitReactFrontMontage);
+  PlayCombatMontage(GetHitReactMontage(Causer ? Causer : DamageInstigator));
 }
 
-void ADsCharacter::HandlePoiseBroken(AActor *, AActor *) {
+UAnimMontage* ADsCharacter::GetHitReactMontage(const AActor* Attacker) const {
+  const auto Direction = DsHitDirection(GetActorRotation(), Attacker ? Attacker->GetActorLocation() - GetActorLocation() : FVector::ZeroVector);
+  return DsSelectHitMontage(Direction, HitReactFrontMontage.Get(), HitReactBackMontage.Get(), HitReactLeftMontage.Get(), HitReactRightMontage.Get());
+}
+
+void ADsCharacter::HandlePoiseBroken(AActor *DamageInstigator, AActor *Causer) {
   if (!AbilitySystem || AbilitySystem->HasMatchingGameplayTag(DsTags::State_Dead))
     return;
   AbilitySystem->CancelAllAbilities();
   AbilitySystem->SetLooseState(DsTags::State_Staggered, true);
   StaggerRemaining = UDsPlayerCombatData::Get()->StaggerDuration;
-  PlayCombatMontage(HitReactFrontMontage);
+  PlayCombatMontage(GetHitReactMontage(Causer ? Causer : DamageInstigator));
 }
 
 void ADsCharacter::HandleOutOfHealth(AActor *, AActor *) {

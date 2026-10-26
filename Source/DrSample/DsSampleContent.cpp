@@ -1,4 +1,5 @@
 #include "DsSampleContent.h"
+#include "Combat/DsHitDirection.h"
 
 #include "Abilities/DsAttributeSet.h"
 #include "Boss/DsBossBrainComponent.h"
@@ -32,12 +33,15 @@ void ADsSampleEnemy::BeginPlay() {
  Super::BeginPlay();
  GetAttributes()->OnDamaged.AddUObject(this, &ADsSampleEnemy::OnSampleDamaged);
 }
-void ADsSampleEnemy::OnSampleDamaged(float Damage, AActor*, AActor*) {
+void ADsSampleEnemy::OnSampleDamaged(float Damage, AActor* InstigatorActor, AActor* Causer) {
  if (Damage <= 0.f || GetAttributes()->GetHealth() <= 0.f || !HitMontage) return;
+ const AActor* Attacker = Causer ? Causer : InstigatorActor;
+ const auto Direction = DsHitDirection(GetActorRotation(), Attacker ? Attacker->GetActorLocation() - GetActorLocation() : FVector::ZeroVector);
+ UAnimMontage* Montage = DsSelectHitMontage(Direction, HitMontage.Get(), HitBackMontage.Get(), HitLeftMontage.Get(), HitRightMontage.Get());
  GetMesh()->SetAnimationMode(EAnimationMode::AnimationBlueprint);
  if (UAnimInstance* Anim = GetMesh()->GetAnimInstance()) {
-  Anim->Montage_Play(HitMontage);
-  ReactionRemaining = HitMontage->GetPlayLength();
+  Anim->Montage_Play(Montage);
+  ReactionRemaining = Montage->GetPlayLength();
  }
 }
 void ADsSampleEnemy::Tick(float DeltaSeconds) {

@@ -13,6 +13,8 @@ ROOTS = [BASE + p for p in [
     'Animations/Actions/MM_Pistol_Melee', 'Animations/Actions/MM_Rifle_Melee',
     'Animations/Actions/MM_HitReact_Front_Lgt_01',
     'Animations/Actions/MM_HitReact_Back_Lgt_01',
+    'Animations/Actions/MM_HitReact_Left_Lgt_01',
+    'Animations/Actions/MM_HitReact_Right_Lgt_01',
     'Animations/Actions/MM_Death_Front_01']]
 registry = unreal.AssetRegistryHelpers.get_asset_registry()
 manifest = ROOT / 'Tools/epic_content_manifest.txt'

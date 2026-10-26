@@ -58,7 +58,7 @@ ADsCharacter는 기본 ASC 하위 객체 AbilitySystem을 생성·복제 설정�
 3. 테이블은 `Tools/gen_tables.ps1`(Ds 한 번 생성, 행 구조체 `DRSAMPLE_API` 내보내기 포함) 뒤 DrSampleEditor를 빌드하고 `-run=DrTableBake -Input=%TEMP%/DrSample-DrTable/sample/client -Out=/Game/Data`로 굽는다. 클래스 이름이 바뀌었으면 `-Force`.
 4. 샘플 에셋은 `Tools/build_sample_content.py`가 만든다. 플레이어 BP 부모는 `ADsCharacter`, 적은 `ADsSampleEnemy`, 애님 BP는 `UDsSampleAnimInstance`, 게임 모드 BP는 `ADsGameMode`, 전투 데이터는 `UDsPlayerCombatData`·`UDsBossData`다. 스크립트는 이미 있는 에셋을 재사용하므로, 부모 클래스를 바꿀 때는 Characters·Combat·Maps 폴더와 ABP·게임 모드 BP를 지우고 다시 실행한다(#65에서 이 방식으로 Dr→Ds 부모를 갱신했다. CoreRedirects는 쓰지 않는다).
 5. Lyra 가져오기 도구는 기존 설치 경로를 보존하며, #64 도구와 SAMPLE_NOTES.md를 따른다. Epic 원본을 저장소에 넣지 않는다.
-6. 자동화는 `Automation List; Automation RunTests DrFramework+DrSample`로 실행한다(72개: 기반 5, 샘플 67). `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동→공격 명중→적 추적·반격→사망을 검증하며 맵이 없으면 경고 후 건너뛴다. 재구성 전 64개의 새 이름은 Docs/task65-test-map.csv다.
+6. 자동화는 `Automation List; RunTests DrFramework+DrSample`로 실행한다(73개: 기반 5, 샘플 68). `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동→공격 명중→적 추적·반격→사망을 검증하며 맵이 없으면 경고 후 건너뛴다. 재구성 전 64개의 새 이름은 Docs/task65-test-map.csv다.
 
 ## 기존 예시 구현의 상세 명세와 수치
 
@@ -603,7 +603,7 @@ DrFramework, DrTableSystem, GameplayAbilities, EnhancedInput, CommonUI, ModelVie
 이 절은 게임이 프레임워크에 제공해야 하는 최소 콘텐츠 계약이다. 특정 리소스 공급자에 종속된 코드를 플러그인에 넣지 않는다. `Source/DrSample`은 이 계약의 예시 소비 게임이다.
 
 1. **표시 메시와 애님 BP**: `ADsCharacter` 파생 캐릭터 BP의 숨긴 `Mesh`와 표시 `MannyMesh`를 구분한다. 호환 스켈레톤을 가진 표시 메시와 자체 애님 BP를 MannyMesh에 설정한다. 애님 BP는 이동 블렌드 → `DefaultSlot` → 최종 포즈로 연결한다. 샘플 `ABP_DrSample`은 `UDrSampleAnimInstance.Speed`(소유 Pawn의 수평 속도)를 이동 블렌드 X에 공급한다. 에셋 그래프 생성은 에디터 전용 `UDrSampleContent.BuildAnimationBlueprint`가 담당하며 AnimGraph·BlueprintGraph·KismetCompiler 링크는 Editor 빌드에서만 추가한다.
-2. **플레이어 데이터**: `UDsPlayerCombatData`의 LightStages/HeavyStages에 몽타주·실제 길이·판정 구간·피해·기력·전진 거리를 설정한다. GameAssets.PlayerCombat으로 연결한다. 샘플은 근접 시퀀스로 `AM_DrSample_AttackLight/AttackHeavy`를 만들고 판정은 .25~.45초, 추가 전진은 25cm로 지정한다. 회피 RollMontages를 비워 기존 대시 경로를 사용한다. 피격 앞·뒤와 사망 몽타주는 캐릭터 BP의 해당 속성에 연결한다. DefaultAbilities에 프레임워크 약공격·강공격·회피·막기를 등록한다.
+2. **플레이어 데이터**: `UDsPlayerCombatData`의 LightStages/HeavyStages에 몽타주·실제 길이·판정 구간·피해·기력·전진 거리를 설정한다. GameAssets.PlayerCombat으로 연결한다. 샘플은 근접 시퀀스로 `AM_DrSample_AttackLight/AttackHeavy`를 만들고 판정은 .25~.45초, 추가 전진은 25cm로 지정한다. 회피 RollMontages를 비워 기존 대시 경로를 사용한다. 피격 앞·뒤·좌·우와 사망 몽타주는 캐릭터 BP의 해당 속성에 연결한다. DefaultAbilities에 프레임워크 약공격·강공격·회피·막기를 등록한다.
 3. **적 데이터**: `ADsBossCharacter` 파생 BP에 메시와 `UDsBossData`를 설정한다. BossName은 BossPhase.Boss와 맞추고 Phase.PatternSet으로 BossAttack 행을 찾는다. 샘플은 Boss 이름, 두 페이즈, Swing 두 행과 Attack 애니 이름을 사용한다. `GameAssets.BossAnim_Idle/Move/Hit/Death/Attack`이 각각 시퀀스 경로를 제공한다. 기존 보스 API는 몽타주가 아닌 시퀀스를 재생한다. 샘플의 `ADrSampleEnemy`는 일반 피해 델리게이트에서 자체 피격 몽타주를 재생하고 완료 뒤 기본 시퀀스로 돌아간다. 추적·공격·페이즈·사망 판단은 기존 Brain이 수행한다.
 4. **입력**: Axis2D 이동·마우스 시점·패드 시점과 Boolean 공격·회피·락온·달리기·점프·막기 InputAction을 만든다. 이동은 WASD negate/swizzle 및 패드 왼쪽 스틱, 시점은 Mouse2D와 패드 오른쪽 스틱을 각각 매핑한다. 캐릭터 BP의 InputMapping과 각 Action 속성을 설정한다. 조작 목록은 README를 따른다.
 5. **게임 모드와 맵**: `ADsGameMode` 파생 BP의 Pawn과 GameAssets.Player에 플레이어 BP 클래스를 지정한다(경로 끝 `_C`). 맵에는 충돌 바닥·조명·하늘·PlayerStart·NavMeshBoundsVolume·적을 배치한다. 샘플 적은 기본 Brain의 근거리 자동 인식을 사용한다. 별도의 엔카운터 표식은 필수가 아니다. DefaultEngine.ini의 GameDefaultMap/EditorStartupMap과 GlobalDefaultGameMode를 설정한다.
@@ -611,13 +611,19 @@ DrFramework, DrTableSystem, GameplayAbilities, EnhancedInput, CommonUI, ModelVie
 
 ### Epic 리소스 설치와 재생성
 
-`Tools/epic_content_manifest.txt`는 Manny/Quinn 메시·스켈레톤·물리 에셋·이동 블렌드·선택 시퀀스의 에셋 레지스트리 하드/소프트 패키지 의존성 폐쇄를 고정한다. `/Engine`·`/Script`는 복사하지 않고 `/Game`은 원래 패키지 경로를 보존한다. 현재 115개다. 가져오기는 `Tools/import_epic_content.ps1 -LyraPath <설치된 Lyra 프로젝트>`로 실행한다. 외부 런타임 설치는 필요 없다. 빌드된 DrSampleEditor와 엔진의 PythonScriptPlugin을 사용한다.
+`Tools/epic_content_manifest.txt`는 Manny/Quinn 메시·스켈레톤·물리 에셋·이동 블렌드·선택 시퀀스의 에셋 레지스트리 하드/소프트 패키지 의존성 폐쇄를 고정한다. `/Engine`·`/Script`는 복사하지 않고 `/Game`은 원래 패키지 경로를 보존한다. 현재 117개다. 가져오기는 `Tools/import_epic_content.ps1 -LyraPath <설치된 Lyra 프로젝트>`로 실행한다. 외부 런타임 설치는 필요 없다. 빌드된 DrSampleEditor와 엔진의 PythonScriptPlugin을 사용한다.
 
 정리 단계는 **복사본만** 수정한다. Lyra 전용/로드 불가 노티파이, 에디터 AnimationModifiers 사용자 데이터와 PA_Mannequin의 전용 물리 재질 참조를 제거한다. 런타임 판정은 노티파이를 사용하지 않는다. 의존성 목록을 갱신할 때는 `DRSAMPLE_DISCOVER=1`, `DRSAMPLE_LYRA_PATH=<Lyra 프로젝트>` 환경 변수를 설정한 뒤 DrFramework에서 `Tools/prepare_epic_content.py`를 PythonScript 커맨드릿으로 실행한다. 목록 밖 후보 파일을 제거하고 빈 상태에서 가져오기와 재실행을 검증한다. Lyra 자체를 에디터로 열거나 원본을 저장하지 않는다.
 
 샘플 BP·입력·몽타주·DataAsset·맵은 `Tools/build_sample_content.py`로 다시 만들 수 있다. 실행 형식은 `UnrealEditor-Cmd DrSample.uproject -run=pythonscript -script=<절대경로>/Tools/build_sample_content.py -EnablePlugins=PythonScriptPlugin -nullrhi -unattended`이다. 스크립트는 이름으로 기존 에셋을 찾아 갱신하며 자체 애님 그래프도 재구성한다. 배포본에는 Content/DrSample과 Content/Data가 포함된다. Epic 복사 대상 폴더는 Git에서 제외한다.
 
 ### 실제 PIE 검증
+
+작업 #68: 피격 방향은 `Combat/DsHitDirection.h`의 순수 함수로 판정한다. 피격자 yaw 기준 공격자 위치의 수평 성분을 비교하며 앞 ±45°, 뒤 ±135° 바깥, 나머지는 좌/우다. 수평 방향을 정규화한 뒤 경계 비교에는 삼각함수 근사 오차용 0.0001 허용치를 둔다. 경계 대각선은 앞/뒤에 포함하고 높이 차이·피치·롤은 무시한다. 공격자 정보가 없거나 위치가 겹치면 정면, 해당 방향 몽타주가 비었으면 정면 몽타주로 대체한다. 플레이어와 샘플 적은 같은 판정·선택 함수를 쓰며 `AM_DrSample_HitFront/Back/Left/Right`에 Lyra 경량 피격 시퀀스를 연결한다. 적의 기존 `HitMontage` 속성은 정면용으로 유지한다. 플레이어의 기존 전투 동작 중 피격 생략과 적 사망 시 피격 생략 규칙은 유지한다.
+
+`DrSample.Combat.HitReaction.DirectionAndBoundaries`는 네 방향·경계각 안팎·회전·높이·겹친 위치·미설정 대체를 검증한다. BasicCombat은 실제 BP의 피해 델리게이트를 호출해 플레이어·적 각각 네 방향 몽타주와 플레이어 포이즈 붕괴의 방향별 반응도 검증한다. 캡처는 테스트 전용 CameraActor 하나를 재사용하며 매 프레임 두 캐릭터의 중점을 측면 사선에서 바라본다. 화면비 고정을 해제하고 테스트 카메라의 모션 블러를 꺼서 두 캐릭터를 또렷하게 담는다. 사망 캡처는 사망 확인 후 32프레임 뒤에 요청한다. 게임 카메라 설정은 바꾸지 않는다.
+
+과노출 원인은 FX 데이터가 없는 경우에도 적용되던 기본 충격 점광원(6,000cd, 반경 650cm, .35초)이다. 기본값을 80cd·250cm·.12초로 조정한다. HitOverlay가 없는 샘플에서는 피격 오버레이가 적용되지 않는다. 바닥은 생성 스크립트에서 Cube 배율 2000×2000×.5(수평 2km)로 확장해 캡처에 모서리가 노출되지 않게 한다. 바닥은 엔진 BasicShapeMaterial 단색 재질로 지정한다. 이동 영역은 기존 크기를 유지한다.
 
 `DrSample.PIE.BasicCombat`은 L_DrSample을 열고 PIE를 시작한다. 1/64초 고정 스텝과 보스 시드 64를 사용하며 종료 시 이전 시간 설정을 복구한다. EnhancedInput 액션 주입으로 이동을 확인한 뒤 프레임워크 공격 입력으로 적 피해·피격, 적 Brain의 추적·공격으로 플레이어 피해·피격, 마지막 공격으로 적 사망 상태·사망 시퀀스를 확인한다. 데스크톱 입력 주입은 하지 않는다. NullRHI에서는 캡처를 생략하며 `-RenderOffscreen` 실행은 `Saved/Screenshots/DrSample/01_idle.png`, `02_attack_hit.png`, `03_player_hit.png`, `04_death.png`를 저장한다.
 

@@ -56,8 +56,8 @@ public:
   UPROPERTY(EditAnywhere, BlueprintReadWrite) float GhostLifetime = .45f;
   UPROPERTY(EditAnywhere, BlueprintReadWrite) float GhostCameraHideDistance = 100.f;
   /** 어두운 지형에서도 충격 위치를 읽게 하는 짧은 점광원(칸델라). */
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) float ImpactLightIntensity = 6000.f;
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="1")) float ImpactLightRadius = 650.f;
-  UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) float ImpactLightDuration = .35f;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) float ImpactLightIntensity = 80.f;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="1")) float ImpactLightRadius = 250.f;
+  UPROPERTY(EditAnywhere, BlueprintReadWrite, meta=(ClampMin="0")) float ImpactLightDuration = .12f;
   UPROPERTY(EditAnywhere, BlueprintReadWrite) FLinearColor ImpactLightColor = FLinearColor(1.f, .35f, .08f);
 };

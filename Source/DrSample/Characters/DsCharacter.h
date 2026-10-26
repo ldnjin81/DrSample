@@ -140,6 +140,10 @@ protected:
   UPROPERTY(EditDefaultsOnly, Category = "Ds|Combat")
   TObjectPtr<UAnimMontage> HitReactBackMontage;
   UPROPERTY(EditDefaultsOnly, Category = "Ds|Combat")
+  TObjectPtr<UAnimMontage> HitReactLeftMontage;
+  UPROPERTY(EditDefaultsOnly, Category = "Ds|Combat")
+  TObjectPtr<UAnimMontage> HitReactRightMontage;
+  UPROPERTY(EditDefaultsOnly, Category = "Ds|Combat")
   TObjectPtr<UAnimMontage> DeathMontage;
   /** 전투 모션에서 이 뼈의 수평 이동만큼 캡슐을 함께 옮긴다. */
   UPROPERTY(EditDefaultsOnly, Category = "Ds|Combat")
@@ -154,6 +158,7 @@ private:
   void FollowVisibleMeshPose();
   void BindCombatEvents();
   void HandleDamaged(float Damage, AActor *DamageInstigator, AActor *Causer);
+  UAnimMontage* GetHitReactMontage(const AActor* Attacker) const;
   void HandlePoiseBroken(AActor *DamageInstigator, AActor *Causer);
   void HandleOutOfHealth(AActor *DamageInstigator, AActor *Causer);
   /** 전투 동작·경직·사망 중에는 이동 입력을 받지 않는다. */

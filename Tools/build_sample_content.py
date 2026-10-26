@@ -82,6 +82,7 @@ montages = {}
 for name, sequence in {
     'AttackLight': 'MM_Pistol_Melee', 'AttackHeavy': 'MM_Rifle_Melee',
     'HitFront': 'MM_HitReact_Front_Lgt_01', 'HitBack': 'MM_HitReact_Back_Lgt_01',
+    'HitLeft': 'MM_HitReact_Left_Lgt_01', 'HitRight': 'MM_HitReact_Right_Lgt_01',
     'Death': 'MM_Death_Front_01',
 }.items():
     source = load(LYRA + '/Animations/Actions/' + sequence)
@@ -141,7 +142,7 @@ for component in cdo.get_components_by_class(u.SkeletalMeshComponent):
 cdo.set_editor_property('input_mapping', context)
 for field, action in [('move_action', 'Move'), ('look_action', 'Look'), ('gamepad_look_action', 'GamepadLook'), ('attack_light_action', 'AttackLight'), ('attack_heavy_action', 'AttackHeavy'), ('dodge_action', 'Dodge'), ('lock_on_action', 'LockOn'), ('sprint_action', 'Sprint'), ('jump_action', 'Jump'), ('guard_action', 'Guard')]:
     cdo.set_editor_property(field, actions[action])
-for field, name in [('hit_react_front_montage', 'HitFront'), ('hit_react_back_montage', 'HitBack'), ('death_montage', 'Death')]:
+for field, name in [('hit_react_front_montage', 'HitFront'), ('hit_react_back_montage', 'HitBack'), ('hit_react_left_montage', 'HitLeft'), ('hit_react_right_montage', 'HitRight'), ('death_montage', 'Death')]:
     cdo.set_editor_property(field, montages[name])
 cdo.set_editor_property('default_abilities', [u.DsGameplayAbility_AttackLight, u.DsGameplayAbility_AttackHeavy, u.DsGameplayAbility_Dodge, u.DsGameplayAbility_Guard])
 u.BlueprintEditorLibrary.compile_blueprint(player)
@@ -154,6 +155,8 @@ mesh.set_anim_instance_class(anim.generated_class())
 mesh.set_editor_property('visibility_based_anim_tick_option', u.VisibilityBasedAnimTickOption.ALWAYS_TICK_POSE_AND_REFRESH_BONES)
 cdo.set_editor_property('boss_data', boss_data)
 cdo.set_editor_property('hit_montage', montages['HitFront'])
+for direction in ['Back', 'Left', 'Right']:
+    cdo.set_editor_property('hit_' + direction.lower() + '_montage', montages['Hit' + direction])
 u.BlueprintEditorLibrary.compile_blueprint(enemy)
 save(enemy)
 factory = u.BlueprintFactory()
@@ -176,7 +179,8 @@ def actor(cls, name, xyz, rotation=None):
     return item
 floor = actor(u.StaticMeshActor, '샘플 바닥', (0, 0, -25))
 floor.static_mesh_component.set_static_mesh(load('/Engine/BasicShapes/Cube'))
-floor.set_actor_scale3d(u.Vector(40, 40, .5))
+floor.static_mesh_component.set_material(0, load('/Engine/BasicShapes/BasicShapeMaterial'))
+floor.set_actor_scale3d(u.Vector(2000, 2000, .5))
 actor(u.PlayerStart, '플레이어 시작', (-400, 0, 100))
 actor(enemy.generated_class(), '훈련 상대', (450, 0, 105), u.Rotator(yaw=180))
 sun = actor(u.DirectionalLight, '태양', (0, 0, 500), u.Rotator(pitch=-45, yaw=-30))
