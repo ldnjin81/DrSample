@@ -49,7 +49,7 @@ New-Item -ItemType Directory -Force (Join-Path $Root 'Saved') | Out-Null
 $PreviousDiscovery = $env:DRSAMPLE_DISCOVER
 try {
     $env:DRSAMPLE_DISCOVER = '0'
-    & $Editor (Join-Path $Root 'DrFramework.uproject') '-run=pythonscript' "-script=$PSScriptRoot\prepare_epic_content.py" '-EnablePlugins=PythonScriptPlugin' '-nullrhi' '-unattended' '-nosplash' "-abslog=$Root\Saved\import_epic_content.log"
+    & $Editor (Join-Path $Root 'DrSample.uproject') '-run=pythonscript' "-script=$PSScriptRoot\prepare_epic_content.py" '-EnablePlugins=PythonScriptPlugin' '-nullrhi' '-unattended' '-nosplash' "-abslog=$Root\Saved\import_epic_content.log"
     if ($LASTEXITCODE -ne 0 -or -not (Select-String -LiteralPath "$Root\Saved\import_epic_content.log" -Pattern 'DRSAMPLE_EPIC_READY' -Quiet)) { throw 'Epic 콘텐츠 정리에 실패했습니다. Saved/import_epic_content.log를 확인하세요.' }
 } finally { $env:DRSAMPLE_DISCOVER = $PreviousDiscovery }
 $NewState = @($Files | ForEach-Object {

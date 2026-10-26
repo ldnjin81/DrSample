@@ -1,3 +1,6 @@
 [submodule "Plugins/DrTableSystem"]
 	path = Plugins/DrTableSystem
 	url = https://github.com/ldnjin81/DrTableSystem
+[submodule "Plugins/DrFramework"]
+	path = Plugins/DrFramework
+	url = https://github.com/ldnjin81/DrFramework

@@ -2,7 +2,7 @@ param([string]$DrTable = 'C:\Project\ProjectDT\Tools\DrTable\drtable.exe')
 # 샘플 테이블(GameAssets·EffectDefs·BossPhase·BossAttack·EffectExtensions)을 생성한다. DrFramework 플러그인은 테이블을 갖지 않는다.
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path $PSScriptRoot -Parent
-$Output = Join-Path $env:TEMP 'DrFramework-DrTable\sample'
+$Output = Join-Path $env:TEMP 'DrSample-DrTable\sample'
 $Schema = "$Root\Source\DrSample\Tables\Schemas"
 $InputData = "$Root\Source\DrSample\Tables\Data"
 $Cpp = "$Root\Source\DrSample\TableData\Generated"

@@ -1,44 +1,27 @@
-# DrFramework
+# DrSample
 
-장르와 무관한 언리얼 엔진 게임 런타임 프레임워크와, 그 위에 게임을 얹는 방법을 보여 주는 샘플 프로젝트다.
+[DrFramework](https://github.com/ldnjin81/DrFramework) 위에 게임을 얹는 방법을 보여 주는 **샘플 프로젝트(참고 구현)**다(UE 5.8, 접두사 `Ds`). 기반 클래스를 상속·설정해 근접 전투 게임 한 판(이동·회피·공격·피격·적 추적·사망, 보스 패턴, 메뉴·HUD)을 만든다.
 
-- **플러그인 `DrFramework`** — 부팅 흐름·네트워크·가짜 서버·콘텐츠 등록·UI 흐름·검증 틀 같은 재사용 기반만 담는다. 다른 프로젝트 플러그인·GAS에 의존하지 않으며 샘플 없이 단독으로 빌드·테스트된다.
-- **샘플 프로젝트 `DrSample`(접두사 `Ds`)** — 기반 클래스를 상속해 만든 참고 구현이다. GAS 상태 효과·어빌리티, 근접 전투·보스·락온·엔카운터·오디오·글래스 UI, 모든 데이터 테이블이 여기에 있다. **게임은 샘플을 포함하지 않고 참고만 한다** — 플러그인만 넣고, 장르 코드는 샘플을 보며 자기 모듈에 만든다. 샘플은 별도 저장소로 분리할 예정이다.
-- **권장 동반 플러그인 [DrTableSystem](https://github.com/ldnjin81/DrTableSystem)** — 스키마 기반 정적 데이터 테이블. 프레임워크 코드는 의존하지 않지만 함께 쓰기를 권장한다. 샘플은 git 서브모듈로 쓴다.
-
-의존 방향은 `DrSample → DrFramework`, `DrSample → DrTableSystem`이다. DrFramework는 아무것도 참조하지 않는다.
+- 게임은 이 샘플을 **포함하지 않고 참고만 한다.** 게임에는 DrFramework(권장: DrTableSystem)만 넣고, 장르 코드는 이 샘플을 보며 자기 모듈에 자기 접두사로 만든다. 필요한 부분을 복사해 출발점으로 삼아도 된다.
+- 기반 명세: [DrFramework 설계 명세서](https://github.com/ldnjin81/DrFramework/blob/main/Docs/FRAMEWORK_FOR_AI.md) · 샘플 명세: [샘플 설계 설명서](Docs/SAMPLE_DESIGN.md) · 콘텐츠 상태: [샘플 인계 노트](Docs/SAMPLE_NOTES.md)
+- 의존: `DrSample → DrFramework`, `DrSample → DrTableSystem`. 두 플러그인은 git 서브모듈이다.
 
 ```powershell
-git clone --recurse-submodules https://github.com/ldnjin81/DrFramework   # 이미 받았으면: git submodule update --init
+git clone --recurse-submodules https://github.com/ldnjin81/DrSample   # 이미 받았으면: git submodule update --init
 ```
-
-## AI용 설계 명세서 내려받기
-
-이 파일 하나만 AI 에이전트에 주면 다른 엔진 버전에서도 같은 기반 구조를 만들 수 있도록 구성했다. 실제 코드는 UE 5.8.2에서 검증했으며, 다른 버전에서는 명세서의 재현 절차에 따라 엔진 API와 빌드 설정을 조정한다.
-
-- [최신(main) 명세서](https://raw.githubusercontent.com/ldnjin81/DrFramework/main/Docs/FRAMEWORK_FOR_AI.md): 링크를 열어 다른 이름으로 저장하면 바로 받는다.
-- [버전별 명세서 — GitHub Releases](https://github.com/ldnjin81/DrFramework/releases): 각 릴리스에 `FRAMEWORK_FOR_AI.md`를 첨부한다.
-- [저장소 안에서 읽기](Docs/FRAMEWORK_FOR_AI.md)
-
-| 문서 | 내용 |
-| --- | --- |
-| [설계 명세서](Docs/FRAMEWORK_FOR_AI.md) | 플러그인(기반)만 다룬다. 이것만 읽어도 다른 장르 게임을 시작할 수 있다 |
-| [샘플 설계 설명서](Docs/SAMPLE_DESIGN.md) | 기반 → Ds 파생 → 재정의 대응표, 샘플 전용 시스템의 상세 동작·수치·테스트 기대값 |
-| [샘플 인계 노트](Docs/SAMPLE_NOTES.md) | Lyra 콘텐츠 가져오기와 샘플 콘텐츠 상태, 후속 확인 항목 |
-| [rename_map.csv](Docs/rename_map.csv) | ProjectDT `Dt` → `Dr` → `Ds` 이름 대응표(기존 게임 전환용) |
 
 ## 구성
 
 | 위치 | 역할 |
 | --- | --- |
-| `Plugins/DrFramework` | 기반 런타임(접두사 `Dr`, `DRFRAMEWORK_API`) |
+| `Plugins/DrFramework` | git 서브모듈 — [DrFramework](https://github.com/ldnjin81/DrFramework) 플러그인(`unreal/DrFramework`) |
 | `Plugins/DrTableSystem` | git 서브모듈 — [DrTableSystem](https://github.com/ldnjin81/DrTableSystem) v0.10.0(플러그인은 `unreal/DrTableSystem`) |
 | `Source/DrSample` | 예시 구현(접두사 `Ds`, `DRSAMPLE_API`), PIE 검증 |
 | `Source/DrSample/Tables` | 샘플 테이블 스키마·열거형·원본 데이터(`Schemas`·`Enums`·`Data`) |
 | `Content/DrSample`, `Content/Data` | 샘플 BP·맵·입력·몽타주·DataAsset, 구운 테이블 |
 | `Tools` | 테이블 생성(`gen_tables.ps1`), Lyra 콘텐츠 가져오기, 샘플 콘텐츠 생성 |
 
-### 무엇이 어디에 있나
+### 기반과 샘플이 나눠 맡는 것
 
 | 영역 | 플러그인(기반) | 샘플(예시 구현) |
 | --- | --- | --- |
@@ -99,32 +82,6 @@ PC -->|메뉴·HUD 생성| SET
 | `ADrPlayerController` 훅 | `OnHUDCreated`·`OnPawnChanged`·`CanOpenPauseMenu`·`RequestRestart` | 게임 HUD 연결, 메뉴 허용 조건, 재시작 |
 | `UDrSmokeSubsystem::RegisterStep` | 단계 없음 | 게임 시나리오 단계 |
 
-## 게임에 연결하기
-
-1. 게임에 `DrFramework` 플러그인을 넣고 활성화한다. 요구하는 엔진 플러그인은 EnhancedInput·CommonUI뿐이다([플러그인 선언](Plugins/DrFramework/DrFramework.uplugin)). 정적 데이터에는 DrTableSystem을 함께 넣는 것을 권장한다(서브모듈 또는 복사).
-2. 게임 모듈 `Build.cs`에 `DrFramework` 의존성을 추가한다(DrTableSystem을 쓰면 `DrTableRuntime`도).
-3. 필요한 기반 클래스를 상속하고 ini에 지정한다. 샘플 설정은 다음과 같다.
-
-```ini
-; Config/DefaultEngine.ini
-[/Script/EngineSettings.GameMapsSettings]
-GameInstanceClass=/Script/DrSample.DsGameInstance
-
-[/Script/Engine.Engine]
-GameViewportClientClassName=/Script/CommonUI.CommonGameViewportClient
-GameUserSettingsClassName=/Script/DrSample.DsGameUserSettings
-
-; Config/DefaultGame.ini
-[/Script/DrFramework.DrUISettings]
-TitleMenuClass=/Script/DrSample.DsTitleMenuWidget
-PauseMenuClass=/Script/DrSample.DsPauseMenuWidget
-SettingsMenuClass=/Script/DrSample.DsSettingsMenuWidget
-HUDClass=/Script/DrSample.DsCombatHUDWidget
-```
-
-4. 전투·상태 효과가 필요하면 샘플의 `Abilities`·`Characters`를 참고해 자기 모듈에 만든다(복사해 출발점으로 삼아도 된다). 테이블은 스키마 생성 → 모듈 등록 → 빌드 → 굽기 순서다(아래 절).
-5. 샘플 모듈(`Source/DrSample`)과 `Content/DrSample`은 게임에 넣지 않는다. 구현 방법은 [샘플 설계 설명서](Docs/SAMPLE_DESIGN.md)와 샘플 코드를 참고한다.
-
 ## 데이터 테이블 (샘플, DrTableSystem)
 
 DrFramework는 테이블을 갖지 않는다. 샘플이 DrTableSystem으로 모든 테이블을 소유한다.
@@ -132,7 +89,7 @@ DrFramework는 테이블을 갖지 않는다. 샘플이 DrTableSystem으로 모�
 ```powershell
 .\Tools\gen_tables.ps1 -DrTable <drtable.exe>     # Source/DrSample/Tables → TableData/Generated (--prefix Ds)
 # DrSampleEditor 빌드 후 (클래스 이름이 바뀌었으면 -Force)
-UnrealEditor-Cmd DrFramework.uproject -run=DrTableBake -Input=$env:TEMP\DrFramework-DrTable\sample\client -Out=/Game/Data -nullrhi -unattended
+UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-DrTable\sample\client -Out=/Game/Data -nullrhi -unattended
 ```
 
 - 생성 C++(`TableData/Generated`)는 손으로 고치지 않는다. 스키마를 고치고 다시 생성한다.
@@ -150,7 +107,7 @@ UnrealEditor-Cmd DrFramework.uproject -run=DrTableBake -Input=$env:TEMP\DrFramew
 .\Tools\import_epic_content.ps1 -LyraPath 'C:\Project\EpicSample\LyraStarterGame'
 ```
 
-3. `L_DrSample` 맵에서 PIE를 시작한다. 샘플 에셋을 다시 만들려면 `UnrealEditor-Cmd DrFramework.uproject -run=pythonscript -script=Tools/build_sample_content.py -EnablePlugins=PythonScriptPlugin -nullrhi -unattended`를 실행한다(이미 있는 에셋은 재사용하므로 부모 클래스를 바꿀 때는 해당 에셋을 지우고 실행).
+3. `L_DrSample` 맵에서 PIE를 시작한다. 샘플 에셋을 다시 만들려면 `UnrealEditor-Cmd DrSample.uproject -run=pythonscript -script=Tools/build_sample_content.py -EnablePlugins=PythonScriptPlugin -nullrhi -unattended`를 실행한다(이미 있는 에셋은 재사용하므로 부모 클래스를 바꿀 때는 해당 에셋을 지우고 실행).
 
 | 동작 | 키보드·마우스 | 패드 |
 | --- | --- | --- |
@@ -170,11 +127,11 @@ UE 5.8.2 기준 현재 상태:
 | --- | --- |
 | `DrSampleEditor Win64 Development` 빌드 | 성공 |
 | `Automation RunTests DrFramework+DrSample` | 72/72 성공(기반 5, 샘플 67, PIE `DrSample.PIE.BasicCombat` 포함) |
-| 플러그인 단독(모듈 없는 임시 프로젝트에 DrFramework만) 빌드·`RunTests DrFramework` | 성공, 5/5 |
-| 플러그인 소스의 `Ds`·DrSample·장르·GAS·DrTable 참조 | 0건 |
+
+플러그인 단독 검증은 [DrFramework 저장소](https://github.com/ldnjin81/DrFramework)의 `Tools/verify.ps1`이 맡는다.
 
 ```powershell
-& '<UE_5.8>\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' '<저장소>\DrFramework.uproject' `
+& '<UE_5.8>\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' '<저장소>\DrSample.uproject' `
   '-ExecCmds=Automation List; Automation RunTests DrFramework+DrSample' `
   '-TestExit=Automation Test Queue Empty' -nullrhi -unattended -log
 ```
@@ -197,4 +154,4 @@ UE 5.8.2 기준 현재 상태:
 - 기반 클래스·구조체·열거형은 `Dr`, 샘플은 `Ds`, 다른 게임은 자기 접두사를 쓴다. 기반 이름은 게임 쪽에서 바꾸지 않는다.
 - 테스트 이름은 기반 `DrFramework.*`, 샘플 `DrSample.*`.
 - 게임플레이 태그(`State.*`·`Ability.*`·`Data.*`)는 샘플 소유다. 기반은 태그를 정의하지 않는다.
-- 구조가 바뀌면 같은 작업에서 기반은 설계 명세서, 샘플은 샘플 설계 설명서, 양쪽 모두 이 README를 고친다([AGENTS.md](AGENTS.md)).
+- 샘플 구조가 바뀌면 같은 작업에서 샘플 설계 설명서와 이 README를 고친다. 기반을 바꿔야 하면 DrFramework 저장소에서 고치고 서브모듈을 올린다([AGENTS.md](AGENTS.md)).

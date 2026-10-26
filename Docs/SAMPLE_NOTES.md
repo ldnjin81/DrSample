@@ -7,6 +7,7 @@
 - `DrSample.PIE.BasicCombat` 통과(이동, 공격 명중·피격, 적 추적·반격·플레이어 피격, 적 사망). 전체 자동화 70/70(당시).
 - 아래 #64 기록의 `DrSampleContent`·`ADrSampleEnemy`·`DrTestFixture.h` 같은 이름은 #64 당시 이름이다. 지금 이름은 위와 같고, 테스트 픽스처는 샘플 `Source/DrSample/Tests/DsTestFixture.h`, 기반 `Plugins/DrFramework/Source/DrFramework/Tests/DrTestWorld.h`·`DrTableTestFixture.h`다.
 - 이후(같은 날) Abilities·캐릭터 골격·상태 효과·GameAssets·EffectDefs도 샘플로 옮겼다. 기반 ASC·어빌리티·캐릭터는 Ds 클래스와 합쳤고, 테이블 에셋은 Ds 클래스로 `-Force` 재굽기했다. 샘플 BP는 재생성 없이 그대로 동작했다. DrTableSystem은 git 서브모듈이 됐다. 전체 자동화 72/72.
+- 저장소 분리(10/27): 이 저장소(DrSample)는 샘플 프로젝트이고 DrFramework는 플러그인 전용 저장소의 서브모듈이다. 프로젝트 파일은 `DrSample.uproject`.
 - 남은 일: 렌더링 캡처(셰이더 작업 폴더 권한 문제), 피격 방향 4종 선택(#849), 메뉴·사운드·FX 콘텐츠.
 
 ## 작업 #64 기록

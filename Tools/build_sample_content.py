@@ -1,7 +1,7 @@
 """샘플 입력·몽타주·전투 데이터·캐릭터 BP·맵을 생성한다.
 
 import_epic_content.ps1과 DrSampleEditor 빌드 후 DrFramework에서 실행:
-UnrealEditor-Cmd DrFramework.uproject -run=pythonscript
+UnrealEditor-Cmd DrSample.uproject -run=pythonscript
 -script=Tools/build_sample_content.py -EnablePlugins=PythonScriptPlugin -nullrhi -unattended
 """
 import unreal as u
