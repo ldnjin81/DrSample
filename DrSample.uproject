@@ -1,0 +1,98 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.8",
+  "Category": "Game",
+  "Description": "DrFramework 플러그인 검증용 최소 샘플",
+  "Modules": [
+    {
+      "Name": "DrSample",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "Plugins": [
+    {
+      "Name": "CommonUI",
+      "Enabled": true
+    },
+    {
+      "Name": "Metasound",
+      "Enabled": true
+    },
+    {
+      "Name": "AudioModulation",
+      "Enabled": true
+    },
+    {
+      "Name": "EngineCameras",
+      "Enabled": true
+    },
+    {
+      "Name": "ModelViewViewModel",
+      "Enabled": true
+    },
+    {
+      "Name": "GameplayAbilities",
+      "Enabled": true
+    },
+    {
+      "Name": "EnhancedInput",
+      "Enabled": true
+    },
+    {
+      "Name": "AnimationWarping",
+      "Enabled": true
+    },
+    {
+      "Name": "PoseSearch",
+      "Enabled": true
+    },
+    {
+      "Name": "BlendStack",
+      "Enabled": true
+    },
+    {
+      "Name": "Chooser",
+      "Enabled": true
+    },
+    {
+      "Name": "MotionWarping",
+      "Enabled": true
+    },
+    {
+      "Name": "AnimationLocomotionLibrary",
+      "Enabled": true
+    },
+    {
+      "Name": "CurveExpression",
+      "Enabled": true
+    },
+    {
+      "Name": "DrawDebugLibrary",
+      "Enabled": true
+    },
+    {
+      "Name": "Mover",
+      "Enabled": true
+    },
+    {
+      "Name": "NetworkPrediction",
+      "Enabled": true
+    },
+    {
+      "Name": "DrTableSystem",
+      "Enabled": true
+    },
+    {
+      "Name": "NaniteAssemblyEditorUtils",
+      "Enabled": true,
+      "TargetAllowList": [
+        "Editor"
+      ]
+    },
+    {
+      "Name": "DrFramework",
+      "Enabled": true
+    }
+  ]
+}
