@@ -1,0 +1,33 @@
+// DrFramework의 네이티브 게임플레이 태그를 선언한다.
+#pragma once
+#include "NativeGameplayTags.h"
+namespace DsTags {
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Groggy);
+// 버프 상태
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Buff_Enrage);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Buff_Guard);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Buff_Shield);
+// 디버프 상태
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Debuff_Burn);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Debuff_Chill);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Debuff_Sunder);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Debuff_Rot);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Debuff_Bleed);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Debuff_Crush);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Invulnerable);
+// 전투 동작 상태
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Attacking);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Guarding);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Parrying);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dodging);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Staggered);
+// 어빌리티 식별 태그
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Attack_Light);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Attack_Heavy);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Guard);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Ability_Dodge);
+// SetByCaller 데이터 태그
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_Damage);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Data_PoiseDamage);
+} // namespace DsTags
