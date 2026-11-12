@@ -58,7 +58,7 @@ ADsCharacter는 기본 ASC 하위 객체 AbilitySystem을 생성·복제 설정�
 3. 테이블은 `Tools/gen_tables.ps1`(Ds 한 번 생성, 행 구조체 `DRSAMPLE_API` 내보내기 포함) 뒤 DrSampleEditor를 빌드하고 `-run=DrTableBake -Input=%TEMP%/DrSample-DrTable/sample/client -Out=/Game/Data`로 굽는다. 클래스 이름이 바뀌었으면 `-Force`.
 4. 샘플 에셋은 `Tools/build_sample_content.py`가 만든다. 플레이어 BP 부모는 `ADsCharacter`, 적은 `ADsSampleEnemy`, 애님 BP는 `UDsSampleAnimInstance`, 게임 모드 BP는 `ADsGameMode`, 전투 데이터는 `UDsPlayerCombatData`·`UDsBossData`다. 스크립트는 이미 있는 에셋을 재사용하므로, 부모 클래스를 바꿀 때는 Characters·Combat·Maps 폴더와 ABP·게임 모드 BP를 지우고 다시 실행한다.
 5. Lyra 가져오기 도구(`Tools/import_epic_content.ps1`)는 Lyra의 원래 패키지 경로를 보존하며, 자세한 내용은 SAMPLE_NOTES.md를 따른다. Epic 원본을 저장소에 넣지 않는다.
-6. 자동화는 `Automation List; RunTests DrFramework+DrSample`로 실행한다(73개: 기반 5, 샘플 68). `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동→공격 명중→적 추적·반격→사망을 검증하며 맵이 없으면 경고 후 건너뛴다. 재구성 전 64개의 새 이름은 Docs/task65-test-map.csv다.
+6. 자동화는 `-ExecCmds="Automation RunTests DrFramework+DrSample"`로 실행한다(74개: 기반 6, 샘플 68). `Automation List;`를 앞에 붙이면 두 번째 명령이 잘못 해석돼 0개가 실행된다. `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동→공격 명중→적 추적·반격→사망을 검증하며 맵이 없으면 경고 후 건너뛴다.
 
 ## 기존 예시 구현의 상세 명세와 수치
 

@@ -29,7 +29,7 @@
 
 ## 검증
 
-- `Automation RunTests DrFramework+DrSample`: 73개(기반 5, 샘플 68). `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동 → 공격 명중·피격 → 적 추적·반격·플레이어 피격 → 적 사망을 실제 BP·몽타주로 검증한다.
+- `Automation RunTests DrFramework+DrSample`: 74개(기반 6, 샘플 68). `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동 → 공격 명중·피격 → 적 추적·반격·플레이어 피격 → 적 사망을 실제 BP·몽타주로 검증한다.
 - 화면 확인: `-RenderOffscreen -ResX=1280 -ResY=720`으로 같은 테스트를 실행하면 `Saved/Screenshots/DrSample/`에 장면 4장(대기·명중·피격·사망)을 테스트 전용 사선 카메라로 남긴다.
 - `-ExecCmds`에는 `Automation RunTests …`만 쓴다. `Automation List; Automation RunTests …`처럼 `Automation` 접두사를 두 번 쓰면 두 번째 명령이 잘못 해석돼 테스트가 0개 실행된다.
 

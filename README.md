@@ -128,7 +128,7 @@ UE 5.8.2 기준 현재 상태:
 | 검증 | 결과 |
 | --- | --- |
 | `DrSampleEditor Win64 Development` 빌드 | 성공 |
-| `Automation RunTests DrFramework+DrSample` | 73/73 성공(기반 5, 샘플 68, PIE `DrSample.PIE.BasicCombat` 포함) |
+| `Automation RunTests DrFramework+DrSample` | 74/74 성공(기반 6, 샘플 68, PIE `DrSample.PIE.BasicCombat` 포함) |
 
 플러그인 단독 검증은 [DrFramework 저장소](https://github.com/ldnjin81/DrFramework)의 `Tools/verify.ps1`이 맡는다.
 
