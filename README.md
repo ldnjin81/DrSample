@@ -107,7 +107,7 @@ UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-Dr
 .\Tools\import_epic_content.ps1 -LyraPath '<Lyra Starter Game 프로젝트 폴더>'
 ```
 
-3. `L_DrSample` 맵에서 PIE를 시작한다. 샘플 에셋을 다시 만들려면 `UnrealEditor-Cmd DrSample.uproject -run=pythonscript -script=Tools/build_sample_content.py -EnablePlugins=PythonScriptPlugin -nullrhi -unattended`를 실행한다(이미 있는 에셋은 재사용하므로 부모 클래스를 바꿀 때는 해당 에셋을 지우고 실행). 타이틀 맵 `L_Title`(패키지 기본 맵)은 같은 방식으로 `Tools/build_title_map.py`를 실행해 만든다.
+3. `L_DrSample` 맵에서 PIE를 시작한다. 샘플 에셋을 다시 만들려면 `UnrealEditor-Cmd DrSample.uproject -run=pythonscript -script=Tools/build_sample_content.py -EnablePlugins=PythonScriptPlugin -nullrhi -unattended`를 실행한다(이미 있는 에셋은 재사용하므로 부모 클래스를 바꿀 때는 해당 에셋을 지우고 실행). 일시정지 입력과 타이틀 맵 `L_Title`(패키지 기본 맵)은 같은 방식으로 `Tools/build_ui_content.py`를 실행해 만든다.
 
 | 동작 | 키보드·마우스 | 패드 |
 | --- | --- | --- |

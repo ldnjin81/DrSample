@@ -25,7 +25,7 @@
 | `Content/DrSample/B_DrSampleGameMode` | 게임 모드 BP(부모 `ADsGameMode`) |
 | `Content/Data` | 구운 테이블(DA_GameAssets·DA_EffectDefs·DA_EffectExtensions·DA_BossPhase·DA_BossAttack) |
 
-이 에셋은 모두 `Tools/build_sample_content.py`로, 타이틀 맵은 `Tools/build_title_map.py`로 다시 만들 수 있다. 스크립트는 이미 있는 에셋을 재사용하므로, 부모 클래스를 바꿀 때는 해당 에셋을 지우고 실행한다.
+이 에셋은 모두 `Tools/build_sample_content.py`로, 일시정지 입력과 타이틀 맵은 `Tools/build_ui_content.py`로 다시 만들 수 있다. 스크립트는 이미 있는 에셋을 재사용하므로, 부모 클래스를 바꿀 때는 해당 에셋을 지우고 실행한다.
 
 ## 검증
 
