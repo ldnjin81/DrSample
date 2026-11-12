@@ -7,7 +7,7 @@
 #include "DsBossPhaseTable.generated.h"
 
 UCLASS(BlueprintType)
-class UDsBossPhaseTable : public UDrTableAssetBase
+class DRSAMPLE_API UDsBossPhaseTable : public UDrTableAssetBase
 {
     GENERATED_BODY()
 

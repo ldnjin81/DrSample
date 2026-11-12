@@ -55,7 +55,7 @@ ADsCharacter는 기본 ASC 하위 객체 AbilitySystem을 생성·복제 설정�
 
 1. 기반 플러그인 둘을 활성화하고 DrSample 모듈을 추가한다. 모듈 의존성은 DrSample.Build.cs를 기준으로 한다.
 2. 테이블 생성 후 DrSampleEditor를 빌드한다. 게임 인스턴스·사용자 설정·게임 모드는 각각 DsGameInstance·DsGameUserSettings·DsGameMode로 지정한다.
-3. 테이블은 `Tools/gen_tables.ps1`(Ds 한 번 생성, 행 구조체 `DRSAMPLE_API` 내보내기 포함) 뒤 DrSampleEditor를 빌드하고 `-run=DrTableBake -Input=%TEMP%/DrSample-DrTable/sample/client -Out=/Game/Data`로 굽는다. 클래스 이름이 바뀌었으면 `-Force`.
+3. 테이블은 `Tools/gen_tables.ps1`(Ds 한 번 생성, `--api DRSAMPLE_API`로 행 구조체·테이블 클래스 내보내기) 뒤 DrSampleEditor를 빌드하고 `-run=DrTableBake -Input=%TEMP%/DrSample-DrTable/sample/client -Out=/Game/Data`로 굽는다. 클래스 이름이 바뀌었으면 `-Force`.
 4. 샘플 에셋은 `Tools/build_sample_content.py`가 만든다. 플레이어 BP 부모는 `ADsCharacter`, 적은 `ADsSampleEnemy`, 애님 BP는 `UDsSampleAnimInstance`, 게임 모드 BP는 `ADsGameMode`, 전투 데이터는 `UDsPlayerCombatData`·`UDsBossData`다. 스크립트는 이미 있는 에셋을 재사용하므로, 부모 클래스를 바꿀 때는 Characters·Combat·Maps 폴더와 ABP·게임 모드 BP를 지우고 다시 실행한다.
 5. Lyra 가져오기 도구(`Tools/import_epic_content.ps1`)는 Lyra의 원래 패키지 경로를 보존하며, 자세한 내용은 SAMPLE_NOTES.md를 따른다. Epic 원본을 저장소에 넣지 않는다.
 6. 자동화는 `-ExecCmds="Automation RunTests DrFramework+DrSample"`로 실행한다(74개: 기반 6, 샘플 68). `Automation List;`를 앞에 붙이면 두 번째 명령이 잘못 해석돼 0개가 실행된다. `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동→공격 명중→적 추적·반격→사망을 검증하며 맵이 없으면 경고 후 건너뛴다.
@@ -175,13 +175,13 @@ APlayerController.OnPossessedPawnChanged                       → ViewModel 재
 - **새 메시지 추가 체크리스트**: enum 값 → 페이로드 USTRUCT → FakeServer `ProcessRequest` 분기 → 클라 콘텐츠의 `GetHandledMessageTypes`/`HandleServerPacket` → 자동화 테스트(지연·실패율 포함).
 
 ## 3. 정적 데이터 (DrTable 플러그인)
-- 도구: **DrTableSystem 0.10.0** — https://github.com/ldnjin81/DrTableSystem (설치·문법은 저장소 README / README.ko.md, `docs/ko/manual.md`가 기준).
+- 도구: **DrTableSystem 0.12.0** — https://github.com/ldnjin81/DrTableSystem (설치·문법은 저장소 README / README.ko.md, `docs/ko/manual.md`가 기준).
   - 구성: `drtable` CLI(`build`, `check`, `diff`, `l10n`, `new`), `drtable-gui`, 언리얼 플러그인(`DrTableRuntime`, `DrTableEditor`).
   - 설치: GitHub Releases의 OS별 `drtable` 실행 파일을 받아 `gen_tables.ps1 -DrTable <경로>`로 넘긴다. 플러그인은 git 서브모듈 `Plugins/DrTableSystem`이다. 생성기와 플러그인은 같은 버전으로 맞춘다.
   - `drtable build --input <데이터> --schema <스키마> --out-cpp Source/DrSample/TableData/Generated --out-client <클라 JSON> --out-server <서버 JSON> --prefix Ds --ue-plugin` → `drtable check --client … --server …`(참조 무결성) → 에디터 빌드 → 굽기 커맨드릿(바뀐 테이블만, `-Verify`는 CI용, `path` 칸이 없는 에셋을 가리키면 칸 위치와 함께 실패).
 - 원본: 스키마(`Source/DrSample/Tables/Schemas/*.schema.xlsx`, `Source/DrSample/Tables/Enums/*.enum.xlsx`)와 데이터 엑셀(`Source/DrSample/Tables/Data/*.xlsx`)을 분리한다. 생성 코드는 스키마에만 의존하므로 데이터 수정은 코드를 바꾸지 않는다. 필드 범위(all/client/server)로 클라·서버 JSON이 나뉜다.
 - 타입 표기: `ID<int32>`, `SubKey<name>`(보조 키 → `FindByX`), `Ref<Table>`/`Ref<Table.Col>`(참조 무결성 검사 + `GetX()` 접근자), `fixed<100>`(정수 저장, `XScale` 상수로 나눔), `duration`(→ `FTimespan`), `path`(→ `FSoftObjectPath`, 타입이 필요하면 `TSoftObjectPtr<T>(Path)`, 굽기 때 에셋 존재 검사), 열거형 시트(`Enums/*.enum.xlsx` → `UENUM EDr*`), 배열 `T[]`/`T[N]`(데이터는 `Name[0]`, `Name[1]` 열 또는 쉼표 칸, 행은 `Name_Start/Num` + 테이블 풀 → `GetName()`이 `TConstArrayView`). 정확한 문법은 저장소 manual이 기준.
-- 생성물: `Source/DrSample/TableData/Generated/FDs<Table>Row`(+`Find(Id)`, `GetAll()`, 참조 접근자), `DsTableRegistration.h`(행 구조체는 `gen_tables.ps1`이 `DRSAMPLE_API`로 내보냄). **손으로 고치지 않는다.**
+- 생성물: `Source/DrSample/TableData/Generated/FDs<Table>Row`(+`Find(Id)`, `GetAll()`, 참조 접근자), `DsTableRegistration.h`(행 구조체·테이블 클래스는 `--api DRSAMPLE_API`로 내보냄). **손으로 고치지 않는다.**
 - 런타임 구조(0.9.0부터 별도 레지스트리 없음, 0.10.0 기준)
   | 역할 | 클래스 |
   |---|---|

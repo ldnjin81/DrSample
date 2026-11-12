@@ -7,7 +7,7 @@
 #include "DsGameAssetsTable.generated.h"
 
 UCLASS(BlueprintType)
-class UDsGameAssetsTable : public UDrTableAssetBase
+class DRSAMPLE_API UDsGameAssetsTable : public UDrTableAssetBase
 {
     GENERATED_BODY()
 

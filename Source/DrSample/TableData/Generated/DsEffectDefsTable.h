@@ -10,7 +10,7 @@
 #include "DsEffectDefsTable.generated.h"
 
 UCLASS(BlueprintType)
-class UDsEffectDefsTable : public UDrTableAssetBase
+class DRSAMPLE_API UDsEffectDefsTable : public UDrTableAssetBase
 {
     GENERATED_BODY()
 

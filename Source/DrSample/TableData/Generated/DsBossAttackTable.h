@@ -8,7 +8,7 @@
 #include "DsBossAttackTable.generated.h"
 
 UCLASS(BlueprintType)
-class UDsBossAttackTable : public UDrTableAssetBase
+class DRSAMPLE_API UDsBossAttackTable : public UDrTableAssetBase
 {
     GENERATED_BODY()
 

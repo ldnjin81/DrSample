@@ -15,7 +15,7 @@ git clone --recurse-submodules https://github.com/ldnjin81/DrSample   # 이미 �
 | 위치 | 역할 |
 | --- | --- |
 | `Plugins/DrFramework` | git 서브모듈 — [DrFramework](https://github.com/ldnjin81/DrFramework) 플러그인(`unreal/DrFramework`) |
-| `Plugins/DrTableSystem` | git 서브모듈 — [DrTableSystem](https://github.com/ldnjin81/DrTableSystem) v0.10.0(플러그인은 `unreal/DrTableSystem`) |
+| `Plugins/DrTableSystem` | git 서브모듈 — [DrTableSystem](https://github.com/ldnjin81/DrTableSystem) v0.12.0(플러그인은 `unreal/DrTableSystem`) |
 | `Source/DrSample` | 예시 구현(접두사 `Ds`, `DRSAMPLE_API`), PIE 검증 |
 | `Source/DrSample/Tables` | 샘플 테이블 스키마·열거형·원본 데이터(`Schemas`·`Enums`·`Data`) |
 | `Content/DrSample`, `Content/Data` | 샘플 BP·맵·입력·몽타주·DataAsset, 구운 테이블 |
@@ -93,7 +93,7 @@ UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-Dr
 ```
 
 - 생성 C++(`TableData/Generated`)는 손으로 고치지 않는다. 스키마를 고치고 다시 생성한다.
-- drtable은 모듈 API 매크로를 붙이지 않으므로 `gen_tables.ps1`이 생성 직후 행 구조체를 `DRSAMPLE_API`로 내보낸다. 다른 모듈이 `FDs…Row::Find`를 링크하려면 필요하다.
+- `gen_tables.ps1`은 `--api DRSAMPLE_API`로 행 구조체와 테이블 에셋 클래스를 내보낸다. 다른 모듈이 `FDs…Row::Find`를 링크하려면 필요하다(drtable 0.12.0부터, 이전에는 생성 후 후처리).
 - 스키마 해시가 바뀌면 다시 굽는다. 옛 에셋이면 런타임에 "Schema mismatch, re-bake required"가 난다.
 
 ## 샘플 실행

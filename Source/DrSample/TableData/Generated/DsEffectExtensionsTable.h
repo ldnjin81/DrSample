@@ -7,7 +7,7 @@
 #include "DsEffectExtensionsTable.generated.h"
 
 UCLASS(BlueprintType)
-class UDsEffectExtensionsTable : public UDrTableAssetBase
+class DRSAMPLE_API UDsEffectExtensionsTable : public UDrTableAssetBase
 {
     GENERATED_BODY()
 
