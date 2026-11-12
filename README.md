@@ -148,7 +148,7 @@ UE 5.8.2 기준 현재 상태:
 | `Ds.Net.SetLatency`, `Ds.Tables.Reload` | 네트워크 조건 변경·테이블 재로드 |
 | `DrTable.Status`, `DrTable.Reload` | 테이블 등록·로드 상태(DrTableSystem) |
 | `-DsAutoNetSmoke` | 부팅·네트워크 흐름 점검 |
-| `-DsSmokeTest`, `-DsPerfCapture` | 패키지 스모크·성능 측정 |
+| `-DrSmokeTest`, `-DrPerfCapture` | 패키지 스모크·성능 측정(기반 인자, 샘플은 단계·카메라 경로만 제공) |
 | `-DsCaptureAudio` | 소리 검증 지원 |
 
 ## 이름 규칙

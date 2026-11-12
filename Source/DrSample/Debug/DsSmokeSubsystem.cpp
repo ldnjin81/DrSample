@@ -8,11 +8,8 @@
 #include "TableData/Generated/DsGameAssetsRow.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
-#include "Misc/CommandLine.h"
-#include "Misc/Parse.h"
-void UDsSmokeSubsystem::Initialize(FSubsystemCollectionBase& Collection) {
- Super::Initialize(Collection);
- if(!FParse::Param(FCommandLine::Get(),TEXT("DsSmokeTest"))) return;
+// -DrSmokeTest로 실행되면 기반(UDrSmokeSubsystem::Initialize)이 부른다.
+void UDsSmokeSubsystem::RegisterSmokeSteps() {
  auto Controller=[this]() { auto* World=GetGameInstance()->GetWorld(); return World ? Cast<ADsPlayerController>(World->GetFirstPlayerController()) : nullptr; };
  RegisterStep(TEXT("title"),[Controller](float) { auto* PC=Controller(); return !PC ? EDrSmokeResult::Pending : PC->IsTitleScreen() && PC->IsMenuInput() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
  RegisterStep(TEXT("travel"),[Controller](float StepSeconds) { if(StepSeconds<2) return EDrSmokeResult::Pending; auto* PC=Controller(); if(!PC) return EDrSmokeResult::Pending; if(PC->IsTitleScreen()) { PC->StartGame(); return EDrSmokeResult::Pending; } return EDrSmokeResult::Passed; });
@@ -24,5 +21,4 @@ void UDsSmokeSubsystem::Initialize(FSubsystemCollectionBase& Collection) {
  RegisterStep(TEXT("pause_open"),[Controller](float StepSeconds) { if(StepSeconds<2) return EDrSmokeResult::Pending; auto* PC=Controller(); return PC && PC->OpenPauseMenu() && PC->IsPaused() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
  RegisterStep(TEXT("settings"),[Controller](float) { auto* PC=Controller(); if(!PC) return EDrSmokeResult::Pending; PC->OpenSettings(); return PC->GetSettingsMenu() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
  RegisterStep(TEXT("pause_close"),[Controller](float) { auto* PC=Controller(); if(!PC) return EDrSmokeResult::Pending; PC->BackMenu(); PC->ClosePauseMenu(); return !PC->IsPaused() && !PC->IsMenuInput() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
- StartSmoke();
 }

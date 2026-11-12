@@ -49,7 +49,7 @@ ADsCharacter는 기본 ASC 하위 객체 AbilitySystem을 생성·복제 설정�
 - BossAttack.Effect는 EffectDefs의 정수 Id다. 0은 효과 없음이다.
 - 네트워크 메시지는 `DsMessages`의 FName 상수(Ping·Login·RequestPlayerProfile·ServerPush_ProfileUpdated)다. 부팅 Connect 단계가 가짜 서버의 로그인·프로필 처리기를 등록한다. 기반 네트워크는 로그인 구조체를 모른다.
 - CommonUI의 클래스·입력·맵은 `Config/DefaultGame.ini`의 UDrUISettings, 콘텐츠 목록은 UDrContentSettings에서 설정한다. 기반 컨트롤러는 샘플 GameAssets 키를 조회하지 않는다.
-- `DsSmokeTest`, `DsPerfCapture`, `DsAutoNetSmoke`는 샘플 실행 옵션이다. 스모크는 타이틀 맵과 콘텐츠 준비가 전제다.
+- `-DrSmokeTest`·`-DrPerfCapture`는 기반 실행 인자다. 샘플은 `UDsSmokeSubsystem::RegisterSmokeSteps`(타이틀·이동·플레이어·보스·테이블·에셋·HUD·일시정지·설정 10단계)와 `UDsPerfSubsystem`(구간 4개 × 15초 카메라 경로: 진입로 앞·숲 가운데·관문·아레나)만 제공한다. `-DsAutoNetSmoke`는 샘플 실행 옵션이다. 스모크는 타이틀 맵과 콘텐츠 준비가 전제다.
 
 ## 재현과 콘텐츠
 
