@@ -107,7 +107,7 @@ UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-Dr
 .\Tools\import_epic_content.ps1 -LyraPath '<Lyra Starter Game 프로젝트 폴더>'
 ```
 
-3. `L_DrSample` 맵에서 PIE를 시작한다. 샘플 에셋을 다시 만들려면 `UnrealEditor-Cmd DrSample.uproject -run=pythonscript -script=Tools/build_sample_content.py -EnablePlugins=PythonScriptPlugin -nullrhi -unattended`를 실행한다(이미 있는 에셋은 재사용하므로 부모 클래스를 바꿀 때는 해당 에셋을 지우고 실행).
+3. `L_DrSample` 맵에서 PIE를 시작한다. 샘플 에셋을 다시 만들려면 `UnrealEditor-Cmd DrSample.uproject -run=pythonscript -script=Tools/build_sample_content.py -EnablePlugins=PythonScriptPlugin -nullrhi -unattended`를 실행한다(이미 있는 에셋은 재사용하므로 부모 클래스를 바꿀 때는 해당 에셋을 지우고 실행). 타이틀 맵 `L_Title`(패키지 기본 맵)은 같은 방식으로 `Tools/build_title_map.py`를 실행해 만든다.
 
 | 동작 | 키보드·마우스 | 패드 |
 | --- | --- | --- |
@@ -128,7 +128,17 @@ UE 5.8.2 기준 현재 상태:
 | 검증 | 결과 |
 | --- | --- |
 | `DrSampleEditor Win64 Development` 빌드 | 성공 |
-| `Automation RunTests DrFramework+DrSample` | 74/74 성공(기반 6, 샘플 68, PIE `DrSample.PIE.BasicCombat` 포함) |
+| `Automation RunTests DrFramework+DrSample` | 76/76 성공(기반 8, 샘플 68, PIE `DrSample.PIE.BasicCombat` 포함) |
+
+패키지 검증(DrFramework `Tools/`, PC에서 SSH로 돌릴 때는 `-Offscreen`):
+
+```powershell
+$p = '<저장소>\DrSample.uproject'; $t = '<저장소>\Plugins\DrFramework\Tools'
+& "$t\package_win64.ps1" -Project $p           # Saved\Package\Windows\DrSample.exe
+& "$t\smoke_win64.ps1" -Project $p -Offscreen  # 타이틀→게임→HUD→일시정지·설정 10단계
+& "$t\perf_win64.ps1" -Project $p -Offscreen   # 구간 4개 × 15초, 1080p
+& "$t\pso_bundle_win64.ps1" -Project $p        # Build\Windows\PipelineCaches\PSO_DrSample_<형식>.spc → 다시 package
+```
 
 플러그인 단독 검증은 [DrFramework 저장소](https://github.com/ldnjin81/DrFramework)의 `Tools/verify.ps1`이 맡는다.
 

@@ -14,9 +14,11 @@ public:
   UDsPerfSubsystem();
 protected:
   virtual bool PrepareCapture(UWorld& World, FString& OutError) override;
-  virtual void UpdateCapture(UWorld& World, int32 Section, float Alpha) override;
+  virtual bool UpdateCapture(UWorld& World, int32 Section, float Alpha) override;
 private:
   TWeakObjectPtr<ACameraActor> Camera;
+  /** 구간 경계 지점(구간 수 + 1개). 구간 i는 Waypoints[i] → Waypoints[i + 1]. */
+  TArray<FVector> Waypoints;
   FVector ArenaCenter = FVector::ZeroVector;
   bool bTravelStarted = false;
 };

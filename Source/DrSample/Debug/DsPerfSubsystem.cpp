@@ -29,6 +29,8 @@ bool UDsPerfSubsystem::PrepareCapture(UWorld& World, FString& OutError) {
   TActorIterator<ADsBossCharacter> Boss(&World);
   if (!Boss) return false;
   ArenaCenter = Boss->GetHomeTransform().GetLocation();
+  Waypoints = {RoadCamera(0), RoadCamera(14000), RoadCamera(30500), FVector(34000, 0, 880), ArenaCenter + FVector(-500, -500, 300)};
+  if (Waypoints.Num() != SectionNames.Num() + 1) { OutError = TEXT("구간 이름과 경로 지점 수가 맞지 않음"); return false; }
   Camera = World.SpawnActor<ACameraActor>();
   if (!Camera.IsValid()) { OutError = TEXT("성능 측정 카메라 생성 실패"); return false; }
   Camera->GetCameraComponent()->SetFieldOfView(90);
@@ -36,17 +38,17 @@ bool UDsPerfSubsystem::PrepareCapture(UWorld& World, FString& OutError) {
   return true;
 }
 
-void UDsPerfSubsystem::UpdateCapture(UWorld&, int32 Section, float Alpha) {
-  if (!Camera.IsValid()) return;
-  const FVector Points[] = {RoadCamera(0), RoadCamera(14000), RoadCamera(30500),
-    FVector(34000, 0, 880), ArenaCenter + FVector(-500, -500, 300)};
+bool UDsPerfSubsystem::UpdateCapture(UWorld&, int32 Section, float Alpha) {
+  if (!Camera.IsValid()) return false;
   // 예열 중에는 출발점에서 첫 구간 방향을 본다.
   if (Section == INDEX_NONE) {
-    Camera->SetActorLocationAndRotation(Points[0], (Points[1] - Points[0]).Rotation());
-    return;
+    Camera->SetActorLocationAndRotation(Waypoints[0], (Waypoints[1] - Waypoints[0]).Rotation());
+    return true;
   }
-  const FVector Location = FMath::Lerp(Points[Section], Points[Section + 1], Alpha);
-  FVector Look = Points[Section + 1] - Location;
-  if (Section == 3) Look = ArenaCenter + FVector(0, 0, 100) - Location;
+  const FVector Location = FMath::Lerp(Waypoints[Section], Waypoints[Section + 1], Alpha);
+  // 마지막 구간은 아레나 중앙을 바라본다.
+  FVector Look = Waypoints[Section + 1] - Location;
+  if (Section == Waypoints.Num() - 2) Look = ArenaCenter + FVector(0, 0, 100) - Location;
   Camera->SetActorLocationAndRotation(Location, Look.Rotation());
+  return true;
 }
