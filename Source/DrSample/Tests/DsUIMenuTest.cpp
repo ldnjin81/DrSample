@@ -100,6 +100,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDrMenuSettingsTest, "DrSample.UI.Menu.VolumePe
   EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FDrMenuSettingsTest::RunTest(const FString&) {
   DsMenuTests::FFixture F;
+  // 샘플은 CommonUI 뒤로 액션을 지정하지 않는다(뒤로는 메뉴 기반의 Esc·패드 키 처리). 로컬 플레이어가 등록돼 액션 라우터가 있으면 그 사실을 오류로 남긴다.
+  AddExpectedError(TEXT("no action provided"), EAutomationExpectedErrorFlags::Contains, 0);
   auto* Settings = UDsGameUserSettings::Get();
   if (!TestNotNull(TEXT("프로젝트 설정 클래스"), Settings)) return false;
   float Old[3];
