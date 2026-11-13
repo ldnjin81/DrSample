@@ -93,6 +93,14 @@
     {
       "Name": "DrFramework",
       "Enabled": true
+    },
+    {
+      "Name": "DrUIKit",
+      "Enabled": true
+    },
+    {
+      "Name": "DrUIGlass",
+      "Enabled": false
     }
   ]
 }

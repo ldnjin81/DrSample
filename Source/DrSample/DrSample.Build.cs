@@ -33,7 +33,7 @@ public class DrSample : ModuleRules
             "Json",
 			"ModelViewViewModel",
 			"FieldNotification",
-			"DrTableRuntime", "DrFramework", "DeveloperSettings"
+			"DrTableRuntime", "DrFramework", "DrUIKit", "DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

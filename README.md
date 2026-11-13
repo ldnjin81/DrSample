@@ -4,7 +4,7 @@
 
 - 게임은 이 샘플을 **포함하지 않고 참고만 한다.** 게임에는 DrFramework(권장: DrTableSystem)만 넣고, 장르 코드는 이 샘플을 보며 자기 모듈에 자기 접두사로 만든다. 필요한 부분을 복사해 출발점으로 삼아도 된다.
 - 기반 명세: [DrFramework 설계 명세서](https://github.com/ldnjin81/DrFramework/blob/main/Docs/FRAMEWORK_FOR_AI.md) · 샘플 명세: [샘플 설계 설명서](Docs/SAMPLE_DESIGN.md) · 콘텐츠: [콘텐츠 가져오기와 알려진 한계](Docs/SAMPLE_NOTES.md)
-- 의존: `DrSample → DrFramework`, `DrSample → DrTableSystem`. 두 플러그인은 git 서브모듈이다.
+- 의존: `DrSample → DrFramework`(게임 흐름·기반), `DrSample → DrUIKit`(UI 흐름·화면 층·메뉴/HUD 기반), `DrSample → DrTableSystem`. 세 플러그인은 git 서브모듈이다.
 
 ```powershell
 git clone --recurse-submodules https://github.com/ldnjin81/DrSample   # 이미 받았으면: git submodule update --init
@@ -15,6 +15,7 @@ git clone --recurse-submodules https://github.com/ldnjin81/DrSample   # 이미 �
 | 위치 | 역할 |
 | --- | --- |
 | `Plugins/DrFramework` | git 서브모듈 — [DrFramework](https://github.com/ldnjin81/DrFramework) 플러그인(`unreal/DrFramework`) |
+| `Plugins/DrUIKit` | git 서브모듈 — [DrUIKit](https://github.com/ldnjin81/DrUIKit) UI 플러그인(`unreal/DrUIKit`). 같이 들어 있는 Glass 샘플 플러그인(DrUIGlass)은 `DrSample.uproject`에서 꺼 둔다 |
 | `Plugins/DrTableSystem` | git 서브모듈 — [DrTableSystem](https://github.com/ldnjin81/DrTableSystem) v0.12.0(플러그인은 `unreal/DrTableSystem`) |
 | `Source/DrSample` | 예시 구현(접두사 `Ds`, `DRSAMPLE_API`), PIE 검증 |
 | `Source/DrSample/Tables` | 샘플 테이블 스키마·열거형·원본 데이터(`Schemas`·`Enums`·`Data`) |
@@ -33,7 +34,7 @@ git clone --recurse-submodules https://github.com/ldnjin81/DrSample   # 이미 �
 | 테이블 | 없음(DrTableSystem 권장) | GameAssets·EffectDefs·BossPhase·BossAttack·EffectExtensions, 등록 1곳 |
 | GAS | 없음 | ASC(틱 어빌리티·상태 효과·쿨다운), 속성 세트, 스탯 공식, 피해 GE, 기력·포이즈, 근접·회피·막기 |
 | 캐릭터 | 없음 | `ADsCharacter`(ASC·입력·카메라·락온·전투 FX), 보스 |
-| UI | 화면 층, 메뉴 동작, HUD 기반, `UDrUISettings`, 컨트롤러 UI 흐름 | 타이틀·일시정지·설정 메뉴, 글래스 버튼, 전투 HUD·표시 모델 |
+| UI | 없음(0.3.0부터 DrUIKit: 화면 층, 메뉴·HUD 기반, `UDrUIFlowSubsystem`, `UDrUIKitSettings`) | 타이틀·일시정지·설정 메뉴, 글래스 버튼, 전투 HUD·표시 모델 |
 | 검증 | 단계 등록형 스모크, 성능 표본 통계 | 스모크 단계·성능 측정 경로, PIE 전투 테스트 |
 | 전투·엔카운터·오디오·태그 | 없음 | 전부 |
 
@@ -46,8 +47,8 @@ direction TB
 GI["UDrGameInstance<br/>부팅 단계"]
 NET["UDrNetworkSubsystem<br/>UDrFakeServer"]
 CON["UDrContentSubsystem"]
-PC["ADrPlayerController<br/>UI 흐름"]
-SET["UDrUISettings<br/>UDrContentSettings"]
+PC["ADrPlayerController<br/>게임 흐름"]
+SET["UDrFlowSettings<br/>UDrContentSettings"]
 SMK["UDrSmokeSubsystem<br/>RegisterStep"]
 end
 subgraph SAMPLE["Source/DrSample (예시 구현, Ds)"]
@@ -64,11 +65,12 @@ DGI -->|상속| GI
 DCH --> DASC
 DPC -->|상속| PC
 DSM -->|단계 등록| SMK
-DUI -.->|ini 클래스 지정| SET
+DUI -->|상속·ini 클래스 지정| UIK[("DrUIKit<br/>UDrUIFlowSubsystem<br/>UDrUIMenuWidget·UDrUIHUDWidget")]
+DPC -->|OnEnterTitle·OnEnterGame| UIK
 DCH -->|NET 메시지| NET
 DT -->|DsTables.cpp 등록| TBS[("DrTableSystem<br/>UDrTableSubsystem")]
 NET --> CON
-PC -->|메뉴·HUD 생성| SET
+PC -->|타이틀·게임 맵| SET
 ```
 
 ## 확장 지점
@@ -78,8 +80,10 @@ PC -->|메뉴·HUD 생성| SET
 | `UDrGameInstance::GetBootSteps`·`ExecuteBootStep` | 빈 단계 목록 | 연결·인증·초기 데이터 단계 |
 | `UDrFakeServer::RegisterHandler` | Ping만 응답 | 메시지 ID별 처리기 |
 | `UDrContentSettings.ContentClasses` | 빈 목록 | 콘텐츠 클래스 등록 |
-| `UDrUISettings`(프로젝트 설정 "DrFramework UI") | 비어 있으면 화면을 열지 않음 | 메뉴·HUD 클래스, 입력 매핑, 타이틀·게임 맵 |
-| `ADrPlayerController` 훅 | `OnHUDCreated`·`OnPawnChanged`·`CanOpenPauseMenu`·`RequestRestart` | 게임 HUD 연결, 메뉴 허용 조건, 재시작 |
+| `UDrFlowSettings`(프로젝트 설정 "DrFramework 흐름") | 비어 있으면 맵을 옮기지 않음 | 타이틀·게임 맵 |
+| `ADrPlayerController` 훅 | `OnEnterTitle`·`OnEnterGame`·`OnPawnChanged`·`RequestRestart` | DrUIKit UI 흐름 시작(`EnterTitle`·`EnterGame`), HUD 표시 모델 연결, 재시작 |
+| DrUIKit `UDrUIKitSettings`(프로젝트 설정 "DrUIKit") | 비어 있으면 화면을 열지 않음 | 메뉴·HUD 클래스, 입력 매핑·일시정지 액션 |
+| DrUIKit `UDrUIFlowSubsystem::CanOpenPauseMenu` | 묶지 않으면 늘 허용 | 사망 중 일시정지 차단 |
 | `UDrSmokeSubsystem::RegisterStep` | 단계 없음 | 게임 시나리오 단계 |
 
 ## 데이터 테이블 (샘플, DrTableSystem)
@@ -174,4 +178,4 @@ Rider에서는 **`DrSample.uproject`**로 연다(Unreal 프로젝트 모드). �
 
 ## 라이선스
 
-[MIT](LICENSE). Epic Games 콘텐츠(Lyra 에셋)는 들어 있지 않으며, 각자 설치한 Lyra Starter Game에서 가져와 Epic 콘텐츠 라이선스에 따라 쓴다. 서브모듈 DrFramework·DrTableSystem은 각 저장소의 라이선스를 따른다.
+[MIT](LICENSE). Epic Games 콘텐츠(Lyra 에셋)는 들어 있지 않으며, 각자 설치한 Lyra Starter Game에서 가져와 Epic 콘텐츠 라이선스에 따라 쓴다. 서브모듈 DrFramework·DrUIKit·DrTableSystem은 각 저장소의 라이선스를 따른다.

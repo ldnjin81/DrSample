@@ -2,17 +2,18 @@
 
 #include "UI/DsGlassButton.h"
 #include "Game/DsPlayerController.h"
+#include "Flow/DrUIFlowSubsystem.h"
 
 void UDsPauseMenuWidget::BuildMenu(UVerticalBox* Contents) {
   AddHeading(Contents, TEXT("Paused"));
   AddButton(Contents, TEXT("Continue"))->OnClicked().AddWeakLambda(this, [this] {
-    if (auto* PC = GetOwningPlayer<ADsPlayerController>()) PC->ClosePauseMenu();
+    if (auto* Flow = UDrUIFlowSubsystem::Get(this)) Flow->ClosePauseMenu();
   });
   AddButton(Contents, TEXT("Restart"))->OnClicked().AddWeakLambda(this, [this] {
     if (auto* PC = GetOwningPlayer<ADsPlayerController>()) PC->RestartCheckpoint();
   });
   AddButton(Contents, TEXT("Settings"))->OnClicked().AddWeakLambda(this, [this] {
-    if (auto* PC = GetOwningPlayer<ADsPlayerController>()) PC->OpenSettings();
+    if (auto* Flow = UDrUIFlowSubsystem::Get(this)) Flow->OpenSettings();
   });
   AddButton(Contents, TEXT("ToTitle"))->OnClicked().AddWeakLambda(this, [this] {
     if (auto* PC = GetOwningPlayer<ADsPlayerController>()) PC->ReturnToTitle();

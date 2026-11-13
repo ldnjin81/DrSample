@@ -2,7 +2,6 @@
 #include "TableData/DsGameAssets.h"
 
 #include "UI/DsGlassButton.h"
-#include "Game/DsPlayerController.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/BackgroundBlur.h"
 #include "Components/CanvasPanel.h"
@@ -13,11 +12,8 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
-#include "Input/CommonUIInputTypes.h"
-#include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Styling/CoreStyle.h"
-#include "InputMappingContext.h"
 #include "Internationalization/StringTable.h"
 
 FText UDsMenuWidget::MenuText(const TCHAR* Key) {
@@ -28,15 +24,6 @@ FText UDsMenuWidget::MenuText(const TCHAR* Key) {
 void UDsMenuWidget::ApplyItemSpacing(UVerticalBoxSlot* LayoutSlot) {
   LayoutSlot->SetPadding(FMargin(32, 10));
   LayoutSlot->SetHorizontalAlignment(HAlign_Center);
-}
-UDsMenuWidget::UDsMenuWidget() { bIsBackHandler = true; }
-void UDsMenuWidget::NativeOnActivated() {
-  InputMapping = LoadObject<UInputMappingContext>(nullptr, *DsGameAssets::Path(TEXT("IMC_UI")).ToString());
-  InputMappingPriority = 200;
-  Super::NativeOnActivated();
-}
-TOptional<FUIInputConfig> UDsMenuWidget::GetDesiredInputConfig() const {
-  return FUIInputConfig(ECommonInputMode::Menu, EMouseCaptureMode::NoCapture);
 }
 TSharedRef<SWidget> UDsMenuWidget::RebuildWidget() {
   FirstFocus = nullptr;
@@ -82,16 +69,4 @@ UDsGlassButton* UDsMenuWidget::AddButton(UVerticalBox* Contents, const TCHAR* Ke
   Button->SetLabel(MenuText(Key)); ApplyItemSpacing(Contents->AddChildToVerticalBox(Button));
   if (!FirstFocus) FirstFocus = Button;
   return Button;
-}
-UWidget* UDsMenuWidget::NativeGetDesiredFocusTarget() const { return FirstFocus; }
-bool UDsMenuWidget::NativeOnHandleBackAction() {
-  if (auto* PC = GetOwningPlayer<ADsPlayerController>()) PC->BackMenu();
-  return true;
-}
-FReply UDsMenuWidget::NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) {
-  if (Event.GetKey() == EKeys::Escape || Event.GetKey() == EKeys::Gamepad_Special_Right) {
-    if (!Event.IsRepeat()) NativeOnHandleBackAction();
-    return FReply::Handled();
-  }
-  return Super::NativeOnPreviewKeyDown(Geometry, Event);
 }

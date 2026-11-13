@@ -1,26 +1,21 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UI/DrMenuWidget.h"
+#include "Flow/DrUIScreens.h"
 #include "DsMenuWidget.generated.h"
 
 class UDsGlassButton;
 class UVerticalBox;
 class UVerticalBoxSlot;
 
-/** 메뉴는 입력 라우팅·첫 포커스·되돌아가기를 공통으로 처리한다. */
+/** 유리 패널 메뉴. 입력 라우팅·첫 포커스·되돌아가기는 DrUIKit 메뉴 기반(UDrUIMenuWidget)이 맡는다. */
 UCLASS(Abstract)
-class DRSAMPLE_API UDsMenuWidget : public UDrMenuWidget {
+class DRSAMPLE_API UDsMenuWidget : public UDrUIMenuWidget {
   GENERATED_BODY()
 public:
-  UDsMenuWidget();
-  virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;
+  using UDrUIMenuWidget::UDrUIMenuWidget;
 protected:
-  virtual void NativeOnActivated() override;
   virtual TSharedRef<SWidget> RebuildWidget() override;
-  virtual UWidget* NativeGetDesiredFocusTarget() const override;
-  virtual bool NativeOnHandleBackAction() override;
-  virtual FReply NativeOnPreviewKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;
   virtual void BuildMenu(UVerticalBox* Contents) PURE_VIRTUAL(UDsMenuWidget::BuildMenu, );
   UDsGlassButton* AddButton(UVerticalBox* Contents, const TCHAR* Key);
   void AddHeading(UVerticalBox* Contents, const TCHAR* Key);

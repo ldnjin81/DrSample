@@ -1,4 +1,4 @@
-"""UI 콘텐츠를 만든다: 일시정지 입력(IA_Pause·IMC_Menu·IMC_UI, DefaultGame.ini DrUISettings가 가리킴)과
+"""UI 콘텐츠를 만든다: 일시정지 입력(IA_Pause·IMC_Menu·IMC_UI, DefaultGame.ini DrUIKitSettings가 가리킴)과
 타이틀 맵 L_Title(게임 모드 ADsTitleGameMode: 플레이어 없이 시네 카메라 + 타이틀 메뉴, 패키지 기본 맵).
 
 build_sample_content.py 다음에 실행(이미 있으면 다시 저장만 한다):

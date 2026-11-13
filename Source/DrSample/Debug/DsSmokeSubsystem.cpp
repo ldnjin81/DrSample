@@ -3,7 +3,10 @@
 #include "Characters/DsCharacter.h"
 #include "Boss/DsBossCharacter.h"
 #include "UI/DsCombatHUDWidget.h"
-#include "UI/DrUISettings.h"
+#include "UI/DsSettingsMenuWidget.h"
+#include "Flow/DrUIFlowSubsystem.h"
+#include "Flow/DrUIRootLayout.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 #include "DrTableSubsystem.h"
 #include "TableData/Generated/DsGameAssetsRow.h"
 #include "Engine/World.h"
@@ -11,8 +14,9 @@
 // -DrSmokeTest로 실행되면 기반(UDrSmokeSubsystem::Initialize)이 부른다.
 void UDsSmokeSubsystem::RegisterSmokeSteps() {
  auto Controller=[this]() { auto* World=GetGameInstance()->GetWorld(); return World ? Cast<ADsPlayerController>(World->GetFirstPlayerController()) : nullptr; };
+ auto Flow=[Controller]() { return UDrUIFlowSubsystem::Get(Controller()); };
  // 컨트롤러가 타이틀 메뉴보다 먼저 생기므로 메뉴 입력이 될 때까지 기다린다(타이틀이 아니면 시간 초과로 실패).
- RegisterStep(TEXT("title"),[Controller](float) { auto* PC=Controller(); return PC && PC->IsTitleScreen() && PC->IsMenuInput() ? EDrSmokeResult::Passed : EDrSmokeResult::Pending; });
+ RegisterStep(TEXT("title"),[Controller,Flow](float) { auto* PC=Controller(); auto* UI=Flow(); return PC && UI && PC->IsTitleScreen() && UI->IsMenuInput() ? EDrSmokeResult::Passed : EDrSmokeResult::Pending; });
  RegisterStep(TEXT("travel"),[Controller](float StepSeconds) { if(StepSeconds<2) return EDrSmokeResult::Pending; auto* PC=Controller(); if(!PC) return EDrSmokeResult::Pending; if(PC->IsTitleScreen()) { PC->StartGame(); return EDrSmokeResult::Pending; } return EDrSmokeResult::Passed; });
  RegisterStep(TEXT("player"),[Controller](float) { auto* PC=Controller(); return PC && Cast<ADsCharacter>(PC->GetPawn()) ? EDrSmokeResult::Passed : EDrSmokeResult::Pending; });
  RegisterStep(TEXT("boss"),[this](float) { auto* World=GetGameInstance()->GetWorld(); return World && TActorIterator<ADsBossCharacter>(World) ? EDrSmokeResult::Passed : EDrSmokeResult::Pending; });
@@ -20,7 +24,7 @@ void UDsSmokeSubsystem::RegisterSmokeSteps() {
  // 빈 경로는 의도된 "없음"(DrTableSystem이 허용, 샘플은 CombatFX가 비어 있음)이라 건너뛰고, 값이 있는데 못 불러오면 실패.
  RegisterStep(TEXT("assets"),[](float) { for(const auto& Row:FDsGameAssetsRow::GetAll()) if(!Row.Path.IsNull() && !Row.Path.TryLoad()) { UE_LOG(LogTemp,Error,TEXT("스모크 assets: 불러오지 못함 %s (%s)"),*Row.Path.ToString(),*Row.Name.ToString()); return EDrSmokeResult::Failed; } return EDrSmokeResult::Passed; });
  RegisterStep(TEXT("hud"),[Controller](float) { auto* PC=Controller(); return PC && PC->GetCombatHUD() ? EDrSmokeResult::Passed : EDrSmokeResult::Pending; });
- RegisterStep(TEXT("pause_open"),[Controller](float StepSeconds) { if(StepSeconds<2) return EDrSmokeResult::Pending; auto* PC=Controller(); return PC && PC->OpenPauseMenu() && PC->IsPaused() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
- RegisterStep(TEXT("settings"),[Controller](float) { auto* PC=Controller(); if(!PC) return EDrSmokeResult::Pending; PC->OpenSettings(); return PC->GetSettingsMenu() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
- RegisterStep(TEXT("pause_close"),[Controller](float) { auto* PC=Controller(); if(!PC) return EDrSmokeResult::Pending; PC->BackMenu(); PC->ClosePauseMenu(); return !PC->IsPaused() && !PC->IsMenuInput() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
+ RegisterStep(TEXT("pause_open"),[Controller,Flow](float StepSeconds) { if(StepSeconds<2) return EDrSmokeResult::Pending; auto* PC=Controller(); auto* UI=Flow(); return PC && UI && UI->OpenPauseMenu() && PC->IsPaused() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
+ RegisterStep(TEXT("settings"),[Flow](float) { auto* UI=Flow(); if(!UI) return EDrSmokeResult::Pending; UI->OpenSettings(); auto* Root=UI->GetRootLayout(); auto* Menus=Root ? Root->GetStack(EDrUILayer::Menu) : nullptr; return Menus && Cast<UDsSettingsMenuWidget>(Menus->GetActiveWidget()) ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
+ RegisterStep(TEXT("pause_close"),[Controller,Flow](float) { auto* PC=Controller(); auto* UI=Flow(); if(!PC || !UI) return EDrSmokeResult::Pending; UI->Back(); UI->Back(); return !PC->IsPaused() && !UI->IsMenuInput() && !UI->IsPauseMenuOpen() ? EDrSmokeResult::Passed : EDrSmokeResult::Failed; });
 }

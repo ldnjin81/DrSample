@@ -6,3 +6,7 @@
 	path = Plugins/DrFramework
 	url = https://github.com/ldnjin81/DrFramework
 	ignore = dirty
+[submodule "Plugins/DrUIKit"]
+	path = Plugins/DrUIKit
+	url = https://github.com/ldnjin81/DrUIKit
+	ignore = dirty

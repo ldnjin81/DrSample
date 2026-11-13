@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UI/DrHUDWidget.h"
+#include "Flow/DrUIScreens.h"
 #include "UI/DsHUDDamageTrail.h"
 #include "DsCombatHUDWidget.generated.h"
 
@@ -13,7 +13,7 @@ class UMaterialInstanceDynamic;
 
 /** 파이썬에 노출되지 않은 WidgetTree 편집은 네이티브 레이아웃으로 재현한다. */
 UCLASS()
-class DRSAMPLE_API UDsCombatHUDWidget : public UDrHUDWidget {
+class DRSAMPLE_API UDsCombatHUDWidget : public UDrUIHUDWidget {
   GENERATED_BODY()
 public:
   virtual TOptional<FUIInputConfig> GetDesiredInputConfig() const override;

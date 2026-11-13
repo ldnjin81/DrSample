@@ -1,6 +1,7 @@
 // 패키지 타깃에는 에디터 API를 포함하지 않는다.
 #if WITH_DEV_AUTOMATION_TESTS && WITH_EDITOR
 #include "Game/DsPlayerController.h"
+#include "Flow/DrUIFlowSubsystem.h"
 #include "CommonInputSettings.h"
 #include "ICommonInputModule.h"
 #include "UI/DsMenuWidget.h"
@@ -33,6 +34,8 @@ namespace DsMenuTests {
 struct FFixture {
   DsTestFixture::FWorldFixture Base{true};
   ADsPlayerController* PC;
+  ULocalPlayer* LocalPlayer;
+  UDrUIFlowSubsystem* Flow;
   ADsCharacter* Hero;
   FFixture() {
     // 콘텐츠 없는 테스트는 CommonInput 선택 데이터의 초기화를 명시적으로 마친다.
@@ -43,18 +46,24 @@ struct FFixture {
     Base.World->SetGameMode(FURL(nullptr, TEXT("/Temp/DrMenuTest?game=/Script/Engine.GameModeBase"), TRAVEL_Absolute));
     Base.World->InitializeActorsForPlay(FURL());
     Base.World->SetBegunPlay(true);
-    PC = Base.World->SpawnActor<ADsPlayerController>();
-    auto* LocalPlayer = NewObject<ULocalPlayer>(GEngine);
+    // 로컬 플레이어(UI 흐름 서브시스템 포함)를 먼저 붙인 뒤 BeginPlay가 돌아야 게임 화면 진입(OnEnterGame)이 흐름을 시작한다.
+    PC = Base.World->SpawnActorDeferred<ADsPlayerController>(ADsPlayerController::StaticClass(), FTransform::Identity);
+    LocalPlayer = NewObject<ULocalPlayer>(GEngine);
     PC->Player = LocalPlayer;
     LocalPlayer->PlayerController = PC;
+    LocalPlayer->PlayerAdded(nullptr, FPlatformUserId::CreateFromInternalId(0));
+    PC->FinishSpawning(FTransform::Identity);
+    Flow = UDrUIFlowSubsystem::Get(PC);
     FActorSpawnParameters Params;
     Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
     Hero = Base.World->SpawnActor<ADsCharacter>(ADsCharacter::StaticClass(), FVector(0,0,100), FRotator::ZeroRotator, Params);
     PC->Possess(Hero);
   }
   ~FFixture() {
-    PC->ClosePauseMenu();
+    if (Flow) Flow->ClosePauseMenu();
     Base.World->EndPlay(EEndPlayReason::Quit);
+    LocalPlayer->PlayerRemoved();
+    LocalPlayer->PlayerController = nullptr;
     GEngine->DestroyWorldContext(Base.World);
   }
 };
@@ -64,25 +73,27 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDrMenuPauseTest, "DrSample.UI.Menu.PauseInputM
   EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FDrMenuPauseTest::RunTest(const FString&) {
   DsMenuTests::FFixture F;
-  TestTrue(TEXT("일시정지 열기"), F.PC->OpenPauseMenu());
+  if (!TestNotNull(TEXT("UI 흐름 서브시스템"), F.Flow)) return false;
+  TestTrue(TEXT("일시정지 열기"), F.Flow->OpenPauseMenu());
   TestTrue(TEXT("월드 일시정지"), UGameplayStatics::IsGamePaused(F.Base.World));
-  TestTrue(TEXT("메뉴 입력과 커서"), F.PC->IsMenuInput() && F.PC->bShowMouseCursor);
-  TestFalse(TEXT("중복 메뉴 방지"), F.PC->OpenPauseMenu());
-  F.PC->ClosePauseMenu();
+  TestTrue(TEXT("메뉴 입력과 커서"), F.Flow->IsMenuInput() && F.PC->bShowMouseCursor);
+  TestFalse(TEXT("중복 메뉴 방지"), F.Flow->OpenPauseMenu());
+  F.Flow->ClosePauseMenu();
   TestFalse(TEXT("계속하기로 일시정지 해제"), UGameplayStatics::IsGamePaused(F.Base.World));
-  TestFalse(TEXT("게임 입력 복원"), F.PC->IsMenuInput() || F.PC->bShowMouseCursor);
+  TestFalse(TEXT("게임 입력 복원"), F.Flow->IsMenuInput() || F.PC->bShowMouseCursor);
   return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDrMenuDeathTest, "DrSample.UI.Menu.BlockDuringDeath",
   EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FDrMenuDeathTest::RunTest(const FString&) {
   DsMenuTests::FFixture F;
+  if (!TestNotNull(TEXT("UI 흐름 서브시스템"), F.Flow)) return false;
   auto* ASC = F.Hero->GetAbilitySystemComponent();
   ASC->SetNumericAttributeBase(UDsAttributeSet::GetHealthAttribute(), 0.f);
-  TestFalse(TEXT("사망 연출 중 일시정지 차단"), F.PC->OpenPauseMenu());
+  TestFalse(TEXT("사망 연출 중 일시정지 차단"), F.Flow->OpenPauseMenu());
   TestFalse(TEXT("사망 타이머 진행 유지"), UGameplayStatics::IsGamePaused(F.Base.World));
   F.Hero->Revive(F.Hero->GetActorTransform());
-  TestTrue(TEXT("부활 후 메뉴 허용"), F.PC->OpenPauseMenu());
+  TestTrue(TEXT("부활 후 메뉴 허용"), F.Flow->OpenPauseMenu());
   return true;
 }
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDrMenuSettingsTest, "DrSample.UI.Menu.VolumePersistence",

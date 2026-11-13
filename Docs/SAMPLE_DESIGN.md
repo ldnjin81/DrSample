@@ -1,6 +1,6 @@
 # DrSample 샘플 설계 설명서 — DrFramework 참고 구현 (UE 5.8.2)
 
-이 문서는 [DrFramework](https://github.com/ldnjin81/DrFramework) 기반을 상속해 게임을 만드는 참고 구현(샘플 프로젝트)의 재현 명세다. 기반 자체는 [설계 명세서](https://github.com/ldnjin81/DrFramework/blob/main/Docs/FRAMEWORK_FOR_AI.md)를 따른다. 의존 방향은 `DrSample → DrFramework`, `DrSample → DrTableSystem`이며 두 플러그인은 git 서브모듈(`Plugins/DrFramework`, `Plugins/DrTableSystem`)이다. 게임은 이 샘플을 포함하지 않고 참고만 한다. 샘플 타입·파일·범주는 Ds 접두사, 테스트는 DrSample을 사용한다.
+이 문서는 [DrFramework](https://github.com/ldnjin81/DrFramework) 기반을 상속해 게임을 만드는 참고 구현(샘플 프로젝트)의 재현 명세다. 기반 자체는 [설계 명세서](https://github.com/ldnjin81/DrFramework/blob/main/Docs/FRAMEWORK_FOR_AI.md)를 따른다. 의존 방향은 `DrSample → DrFramework`, `DrSample → DrUIKit`, `DrSample → DrTableSystem`이며 세 플러그인은 git 서브모듈(`Plugins/DrFramework`, `Plugins/DrUIKit`, `Plugins/DrTableSystem`)이다. UI 흐름(화면 층·메뉴/HUD 기반·일시정지·입력 모드)은 DrFramework 0.3.0부터 [DrUIKit](https://github.com/ldnjin81/DrUIKit)이 맡는다. 게임은 이 샘플을 포함하지 않고 참고만 한다. 샘플 타입·파일·범주는 Ds 접두사, 테스트는 DrSample을 사용한다.
 
 ## 기반에서 확장한 지점
 
@@ -10,9 +10,9 @@
 | ADrGameMode | ADsGameMode | 기본 캐릭터·컨트롤러 지정, GameAssets.Player 로드 |
 | UDrGameUserSettings | UDsGameUserSettings | SFX·Voice·Music 저장·기본값 |
 | ACharacter(엔진) | ADsCharacter | ASC 하위 객체·IAbilitySystemInterface, 전투 속성·입력·카메라·메시·FX |
-| UDrMenuWidget | UDsMenuWidget → 제목/일시정지/설정 메뉴 | RebuildWidget·BuildMenu: 글래스 레이아웃·버튼·문자열·음량 슬라이더 |
-| UDrHUDWidget | UDsCombatHUDWidget | RebuildWidget·NativeTick: 전투 게이지·표시 모델·잔상 |
-| ADrPlayerController | ADsPlayerController | OnHUDCreated·OnPawnChanged·CanOpenPauseMenu·RequestRestart: 전투 HUD·사망 중 차단·체크포인트 |
+| UDrUIMenuWidget(DrUIKit) | UDsMenuWidget → 제목/일시정지/설정 메뉴 | RebuildWidget·BuildMenu: 글래스 레이아웃·버튼·문자열·음량 슬라이더 |
+| UDrUIHUDWidget(DrUIKit) | UDsCombatHUDWidget | RebuildWidget·NativeTick: 전투 게이지·표시 모델·잔상 |
+| ADrPlayerController | ADsPlayerController | OnEnterTitle·OnEnterGame(DrUIKit UI 흐름 시작, HUD 표시 모델 연결, CanOpenPauseMenu 묶기)·OnPawnChanged·RequestRestart: 사망 중 차단·체크포인트 |
 | UDrContentBase | UDsPlayerProfileContent | 메시지 ID별 프로필 응답·변경 알림 |
 | UDrSmokeSubsystem | UDsSmokeSubsystem | title·travel·player·boss·tables·assets·hud·pause_open·settings·pause_close 콜백 등록 |
 | UDrPerfSubsystem | UDsPerfSubsystem | 카메라 경로·구간 샘플 수집, 기반 Summarize로 frame/game/gpu 평균·p95·최댓값 계산 |
@@ -48,7 +48,7 @@ ADsCharacter는 기본 ASC 하위 객체 AbilitySystem을 생성·복제 설정�
 - EffectDefs에는 포이즈 같은 전투 전용 칸이 없다. `DsEffectExtensions`는 같은 효과 Id에 대한 ProcPoiseDamage를 소유한다. 기반 런타임 효과의 DefinitionId를 통해 OnEffectApplied에서 조회하고, Accumulate 중첩 보너스에 따라 포이즈 피해도 확대한다.
 - BossAttack.Effect는 EffectDefs의 정수 Id다. 0은 효과 없음이다.
 - 네트워크 메시지는 `DsMessages`의 FName 상수(Ping·Login·RequestPlayerProfile·ServerPush_ProfileUpdated)다. 부팅 Connect 단계가 가짜 서버의 로그인·프로필 처리기를 등록한다. 기반 네트워크는 로그인 구조체를 모른다.
-- CommonUI의 클래스·입력·맵은 `Config/DefaultGame.ini`의 UDrUISettings, 콘텐츠 목록은 UDrContentSettings에서 설정한다. 기반 컨트롤러는 샘플 GameAssets 키를 조회하지 않는다.
+- 메뉴·HUD 클래스와 입력은 `Config/DefaultGame.ini`의 UDrUIKitSettings(DrUIKit), 타이틀·게임 맵은 UDrFlowSettings, 콘텐츠 목록은 UDrContentSettings에서 설정한다. 기반 컨트롤러는 샘플 GameAssets 키를 조회하지 않는다.
 - `-DrSmokeTest`·`-DrPerfCapture`는 기반 실행 인자다. 샘플은 `UDsSmokeSubsystem::RegisterSmokeSteps`(타이틀·이동·플레이어·보스·테이블·에셋·HUD·일시정지·설정 10단계)와 `UDsPerfSubsystem`(구간 4개 × 15초 카메라 경로: 진입로 앞·숲 가운데·관문·아레나)만 제공한다. `-DsAutoNetSmoke`는 샘플 실행 옵션이다. 스모크는 타이틀 맵과 콘텐츠 준비가 전제다.
 
 ## 재현과 콘텐츠
@@ -86,7 +86,9 @@ UWorld
  ├ UDsEncounterSubsystem    (Tickable World) — 체크포인트·문·사망·승리
  ├ UDsHitFeedbackSubsystem  (Tickable World) — 히트스톱·셰이크·플래시
  └ UDsAudioSubsystem        (Tickable World) — 음악 상태·보스/피격/환경 소리·채널 음량
-ADsPlayerController — UDrUIRootLayout(Game/Menu 스택), HUD ViewModel·Widget, 일시정지·설정
+ADsPlayerController — 화면 진입 시 DrUIKit UI 흐름 시작, HUD ViewModel
+ULocalPlayer
+ └ UDrUIFlowSubsystem (DrUIKit) — UDrUIRootLayout(Game/Menu/Modal 층), HUD, 일시정지·설정·뒤로, 입력 모드
 ADsCharacter        — ASC + AttributeSet, LockOn, CombatFX, 카메라, Manny 표시 메시
 ADsBossCharacter    — ASC + AttributeSet, BossBrain, CombatFX, LockOnTarget
 ```
@@ -113,8 +115,8 @@ UGameplayAbility         → UDsGameplayAbility[A] → _MeleeAttack[A] → _Atta
                                                 → _Dodge, _Guard, _ApplyEffect
 UDataAsset               → UDsPlayerCombatData, UDsBossData, UDsCombatFeelData, UDsCombatFXData, UDsAudioData
 UCameraShakeBase         → UDsLightHitShake, UDsHeavyHitShake
-UUserWidget              → UDrUIRootLayout
-UCommonActivatableWidget → UDsCombatHUDWidget, UDsMenuWidget[A] → UDsTitleMenuWidget, UDsPauseMenuWidget, UDsSettingsMenuWidget
+UDrUIHUDWidget(DrUIKit)  → UDsCombatHUDWidget
+UDrUIMenuWidget(DrUIKit) → UDsMenuWidget[A] → UDsTitleMenuWidget, UDsPauseMenuWidget, UDsSettingsMenuWidget
 UCommonButtonBase        → UDsGlassButton      (UCommonButtonStyle → UDsGlassButtonStyle)
 UMVVMViewModelBase       → UDsCombatHUDViewModel
 값 구조체: FDrMeleeStage, FDrResolvedEffect, FDr<Table>Row(생성), FDrNetPacket/Response, FDrLatencyProfile,
@@ -139,7 +141,7 @@ UDsHitFeedbackSubsystem data: UDsCombatFeelData   own: TMap<TWeakObjectPtr<AActo
 UDsCombatFXComponent data: UDsCombatFXData::Get()  own: UNiagaraComponent들, UDecalComponent+MID, UPointLightComponent, FDrGhostPose[]
 UDsEncounterSubsystem weak: ADsCharacter, ADsBossCharacter, Checkpoint/Door/Start AActor
 UDsAudioSubsystem   data: UDsAudioData   own: Music/Door/Environment UAudioComponent   weak: Boss, Encounter(의존성 초기화), 피해 이벤트를 구독한 플레이어·보스
-ADsPlayerController own: UDrUIRootLayout(→GameStack, MenuStack), UDsCombatHUDViewModel, UDsCombatHUDWidget, UDsSettingsMenuWidget, 일시정지 IMC/IA
+ADsPlayerController own: UDsCombatHUDViewModel   (화면 층·HUD·설정 메뉴·일시정지 IMC/IA는 UDrUIFlowSubsystem 소유)
 UDsCombatHUDViewModel weak: Player, PlayerASC, BossASC, Encounter
 UDsCombatHUDWidget  own: ViewModel 참조, 패널·텍스트, 게이지 MID, FDsHUDDamageTrail×2
 UDrNetworkSubsystem own: UDrServerEndpoint(ServerEndpointClass로 생성), PendingRequests, ReceiveQueue
@@ -317,9 +319,9 @@ IncomingPoiseDamage: 무적이거나 정면 쳐내기/막기 중이면 무시. P
 - 몽타주 사운드 노티파이(휘두름·접촉·기합)는 에디터 라이브러리 함수가 몽타주 이름 규칙으로 재생성.
 
 ## 14. UI (CommonUI + MVVM, 리퀴드 글라스)
-- `ADsPlayerController`가 `UDrUIRootLayout`(GameStack, MenuStack) 소유. `PushGame/PushMenu/PopMenu/ClearMenus`.
-- 일시정지: 전용 입력 컨텍스트, `OpenPauseMenu/Close/Toggle`, `OpenSettings`, `BackMenu`, `StartGame`, `ReturnToTitle`, `RestartCheckpoint`. 메뉴 입력 모드 전환(`ApplyInputMode`). 사망 중에는 메뉴 차단.
-- `UDsMenuWidget`(Abstract, `UCommonActivatableWidget`): 입력 구성·첫 포커스·뒤로가기·키 미리보기 공통, 파생은 `BuildMenu(VerticalBox)`만 구현. Title(뒤로가기 무시)·Pause·Settings(SFX/Voice/Music 슬라이더).
+- UI 흐름은 DrUIKit `UDrUIFlowSubsystem`(로컬 플레이어 서브시스템)이 맡는다. `ADsPlayerController::OnEnterTitle`은 `EnterTitle()`, `OnEnterGame`은 `CanOpenPauseMenu` 묶기 → `EnterGame()` → `GetHUD()`에 표시 모델 연결. 화면 층 `UDrUIRootLayout`(Game/Menu/Modal + 알림).
+- 일시정지: `UDrUIFlowSubsystem::OpenPauseMenu/ClosePauseMenu/TogglePauseMenu`, `OpenSettings`, `Back`, 입력 모드 전환. 맵 이동은 컨트롤러(`StartGame`, `ReturnToTitle`, `RestartCheckpoint` — 재시작은 일시정지 메뉴를 닫고 체크포인트로). 사망 중에는 `CanOpenPauseMenu`가 메뉴를 막는다.
+- `UDsMenuWidget`(Abstract, DrUIKit `UDrUIMenuWidget`): 입력 구성·첫 포커스·뒤로가기·키 미리보기는 기반, 샘플은 유리 패널 레이아웃과 `BuildMenu(VerticalBox)`만 구현. Title(뒤로가기 무시)·Pause·Settings(SFX/Voice/Music 슬라이더).
 - `UDsGlassButton`(`UCommonButtonBase`) + `UDsGlassButtonStyle`: 키보드·패드 포커스와 마우스 호버를 같은 유리 림 MID로 표시.
 - HUD: `UDsCombatHUDViewModel`(`UMVVMViewModelBase`, FieldNotify) — PlayerHealth/Max, PlayerStamina/Max, BossVisible, BossDisplayName, BossHealthRate, EncounterState, LockOnTarget + 계산 필드 HealthRate/StaminaRate/IsPlayerDead/IsVictory. **GAS 속성 변경 델리게이트와 엔카운터 이벤트만 구독**.
 - `UDsCombatHUDWidget`: 네이티브로 레이아웃 생성(`RebuildWidget`; 파이썬에 WidgetTree 편집이 노출되지 않기 때문). 게이지는 머티리얼 MID, 락온 마커, 결과 패널(사망/승리) 페이드.
