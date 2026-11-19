@@ -36,10 +36,13 @@
 namespace DsSnapshot {
 bool Save(UUserWidget* Widget, const FString& Name, FVector2D Size) {
   FWidgetRenderer Renderer(true);
-  // 스타일 그림(9분할 PNG)은 처음 그릴 때 텍스처로 만들어지므로 한 번 그려 둔 뒤 다시 그린다.
+  // Slate 위젯을 붙잡아 둔다. 놓으면 다음 TakeWidget이 위젯을 새로 만들어 매번 첫 프레임만 그린다
+  // (틱에서 채우는 행동 바 키 안내가 크기를 못 받아 빈칸으로 찍혔다).
+  const TSharedRef<SWidget> Slate = Widget->TakeWidget();
+  // 스타일 그림(9분할 PNG)은 처음 그릴 때 텍스처로 만들어지고, 틱에서 바뀐 레이아웃은 다음 프레임에 잡히므로 몇 번 그린다.
   UTextureRenderTarget2D* Target = nullptr;
   for (int32 Pass = 0; Pass < 3; ++Pass) {
-    Target = Renderer.DrawWidget(Widget->TakeWidget(), Size);
+    Target = Renderer.DrawWidget(Slate, Size);
     FlushRenderingCommands();
   }
   if (!Target) return false;
