@@ -1,4 +1,4 @@
-# DrSample 샘플 설계 설명서 — DrFramework 참고 구현 (UE 5.8.2)
+# DrSample 샘플 설계 설명서 — DrFramework 참고 구현 (UE 5.9 · 5.8 호환)
 
 이 문서는 [DrFramework](https://github.com/ldnjin81/DrFramework) 기반을 상속해 게임을 만드는 참고 구현(샘플 프로젝트)의 재현 명세다. 기반 자체는 [설계 명세서](https://github.com/ldnjin81/DrFramework/blob/main/Docs/FRAMEWORK_FOR_AI.md)를 따른다. 의존 방향은 `DrSample → DrFramework`, `DrSample → DrUIKit`, `DrSample → DrTableSystem`이며 세 플러그인은 git 서브모듈(`Plugins/DrFramework`, `Plugins/DrUIKit`, `Plugins/DrTableSystem`)이다. UI 흐름(화면 층·메뉴/HUD 기반·일시정지·입력 모드)은 DrFramework 0.3.0부터 [DrUIKit](https://github.com/ldnjin81/DrUIKit)이 맡는다. 게임은 이 샘플을 포함하지 않고 참고만 한다. 샘플 타입·파일·범주는 Ds 접두사, 테스트는 DrSample을 사용한다.
 
@@ -383,7 +383,7 @@ IncomingPoiseDamage: 무적이거나 정면 쳐내기/막기 중이면 무시. P
 - 에디터 스크립트 `Tools/task_<주제>.py`(멱등, 머리 docstring에 실행 명령), 공유 모듈 `Tools/xx_<주제>.py`, 셸 진입점 `<동사>_<대상>.cmd/.ps1`(snake_case). 작업 번호를 파일 이름에 넣지 않는다.
 - 문서 `Docs/<분류>/UPPER_SNAKE.md`.
 
-## 18. UE 5.8 C++ 함정
+## 18. UE 5.8·5.9 C++ 함정
 1. 각 .cpp 첫 include는 자기 헤더(IWYU). 서브폴더 include는 모듈 루트 기준.
 2. `*.Target.cs`에 namespace 금지, `BuildSettingsVersion.V7`.
 3. UCLASS BlueprintNativeEvent는 `Obj->Foo()`로 호출(`Execute_`는 인터페이스 전용).

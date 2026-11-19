@@ -1,6 +1,6 @@
 # DrSample
 
-[DrFramework](https://github.com/ldnjin81/DrFramework) 위에 게임을 얹는 방법을 보여 주는 **샘플 프로젝트(참고 구현)**다(UE 5.8, 접두사 `Ds`). 기반 클래스를 상속·설정해 근접 전투 게임 한 판(이동·회피·공격·피격·적 추적·사망, 보스 패턴, 메뉴·HUD)을 만든다.
+[DrFramework](https://github.com/ldnjin81/DrFramework) 위에 게임을 얹는 방법을 보여 주는 **샘플 프로젝트(참고 구현)**다(UE 5.9 · 5.8 호환, 접두사 `Ds`). 기반 클래스를 상속·설정해 근접 전투 게임 한 판(이동·회피·공격·피격·적 추적·사망, 보스 패턴, 메뉴·HUD)을 만든다.
 
 - 게임은 이 샘플을 **포함하지 않고 참고만 한다.** 게임에는 DrFramework(권장: DrTableSystem)만 넣고, 장르 코드는 이 샘플을 보며 자기 모듈에 자기 접두사로 만든다. 필요한 부분을 복사해 출발점으로 삼아도 된다.
 - 기반 명세: [DrFramework 설계 명세서](https://github.com/ldnjin81/DrFramework/blob/main/Docs/FRAMEWORK_FOR_AI.md) · 샘플 명세: [샘플 설계 설명서](Docs/SAMPLE_DESIGN.md) · 콘텐츠: [콘텐츠 가져오기와 알려진 한계](Docs/SAMPLE_NOTES.md)
@@ -104,7 +104,7 @@ UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-Dr
 
 저장소에는 코드, 샘플 BP·맵·입력·몽타주·DataAsset과 구운 테이블이 들어 있다. Epic 원본 메시·시퀀스·머티리얼은 각자 설치한 **Lyra Starter Game**에서 가져온다. 원래 패키지 경로(`Content/Characters/`, `Content/Effects/`, `Content/PhysicsMaterials/`)로 복사하며 이 폴더는 Git에서 제외한다.
 
-1. UE 5.8.2에서 `DrSampleEditor Win64 Development`를 빌드한다.
+1. UE 5.9(또는 5.8)에서 `DrSampleEditor Win64 Development`를 빌드한다.
 2. 에디터를 닫고 Lyra 콘텐츠를 가져온다. 도구는 고정 목록의 117개 에셋을 복사하고 복사본에서 Lyra 전용 참조를 정리한다. Lyra 프로젝트는 바꾸지 않는다.
 
 ```powershell
@@ -148,7 +148,7 @@ $p = '<저장소>\DrSample.uproject'; $t = '<저장소>\Plugins\DrFramework\Tool
 플러그인 단독 검증은 [DrFramework 저장소](https://github.com/ldnjin81/DrFramework)의 `Tools/verify.ps1`이 맡는다.
 
 ```powershell
-& '<UE_5.8>\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' '<저장소>\DrSample.uproject' `
+& '<UE_5.9>\Engine\Binaries\Win64\UnrealEditor-Cmd.exe' '<저장소>\DrSample.uproject' `
   '-ExecCmds=Automation RunTests DrFramework+DrSample' `
   '-TestExit=Automation Test Queue Empty' -nullrhi -unattended -log
 ```

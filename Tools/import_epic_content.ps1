@@ -1,7 +1,9 @@
 ﻿param(
     [Parameter(Mandatory=$true)][string]$LyraPath,
-    [string]$Editor = 'C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe'
+    [string]$Editor = ''
 )
+# 에디터: 지정하지 않으면 UE 5.9, 없으면 UE 5.8(둘 다 지원).
+if (-not $Editor) { $Editor = @('UE_5.9', 'UE_5.8') | ForEach-Object { "C:\Program Files\Epic Games\$_\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" } | Where-Object { Test-Path $_ } | Select-Object -First 1 }
 $ErrorActionPreference = 'Stop'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $Source = (Resolve-Path (Join-Path $LyraPath 'Content')).Path

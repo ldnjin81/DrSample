@@ -1,6 +1,6 @@
 {
   "FileVersion": 3,
-  "EngineAssociation": "5.8",
+  "EngineAssociation": "5.9",
   "Category": "Game",
   "Description": "DrFramework 플러그인 검증용 최소 샘플",
   "Modules": [
