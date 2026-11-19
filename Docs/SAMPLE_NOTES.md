@@ -35,7 +35,7 @@
 
 ## 알려진 한계
 
-- 메뉴·HUD는 에셋 없이 DrUIKit 부품과 스타일 토큰으로 그린다(머티리얼·문자열 테이블 불필요). 화면 확인은 `-RenderOffscreen`으로 `DrSample.UI.Snapshot.MenusAndHUD`를 돌려 `Saved/Screenshots/DrSample/UI/`의 PNG를 본다. 이 캡처에서는 키보드 키 모양(Kenney 이미지)이 빈 칸으로 나온다(DrUIKit `UDrKeyGlyph`, 실제 화면은 따로 확인 필요).
+- 메뉴·HUD는 에셋 없이 DrUIKit 부품과 스타일 토큰으로 그린다(머티리얼·문자열 테이블 불필요). 화면 확인은 `-RenderOffscreen`으로 `DrSample.UI.Snapshot.MenusAndHUD`를 돌려 `Saved/Screenshots/DrSample/UI/`의 PNG를 본다. 캡처는 Slate 위젯을 붙잡고 여러 번 그린다(놓으면 매번 첫 프레임만 찍혀 틱에서 채우는 행동 바 키 안내가 빈칸이 된다, 2026-11-19 해결).
 - 저장소에 없는 데이터 에셋은 대체 동작을 쓴다. GameAssets 테이블에 줄이 없어 시작·테스트 로그에 경고가 남는다.
   - `DA_Audio`(사운드·컨트롤 버스): 없음 → 무음. Lyra에 효과음이 있으나 가져오기 목록(`epic_content_manifest.txt`)에 넣지 않았다.
   - `DA_CombatFeel`(락온·타격 정지·셰이크 수치), `CombatFX`(전투 FX): 없음 → 클래스 기본값(`GetDefault`).
