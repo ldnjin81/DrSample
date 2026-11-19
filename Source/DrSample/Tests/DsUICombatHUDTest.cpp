@@ -1,5 +1,7 @@
 #include "UI/DsCombatHUDViewModel.h"
 #include "UI/DsHUDDamageTrail.h"
+#include "UI/DsCombatHUDWidget.h"
+#include "Blueprint/UserWidget.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 #include "Abilities/DsAbilitySystemComponent.h"
@@ -135,6 +137,34 @@ bool FDsHUDDamageTrailTest::RunTest(const FString &) {
   Trail.SetTarget(1.f, 12.1);
   TestEqual(TEXT("회복·재도전 즉시 잔상 리셋"), Trail.Value, 1.f);
   TestFalse(TEXT("회복 후 갱신 정지"), Trail.bActive);
+  return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDsHUDWidgetTest, "DrSample.UI.CombatHUD.WidgetGauges",
+  EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FDsHUDWidgetTest::RunTest(const FString &) {
+  DrHUDTests::FFixture F;
+  // nullrhi에서도 위젯 트리를 실제로 만들어 게이지·보스 패널·결과 띠가 표시 모델을 따르는지 본다.
+  auto *Widget = CreateWidget<UDsCombatHUDWidget>(F.Base.World);
+  if (!TestNotNull(TEXT("HUD 위젯 생성"), Widget)) return false;
+  Widget->TakeWidget();
+  Widget->SetViewModel(F.VM);
+  TestEqual(TEXT("시작 체력 게이지"), Widget->GetHealthFill(), 1.f);
+  auto *ASC = Cast<UDsAbilitySystemComponent>(F.Player->GetAbilitySystemComponent());
+  ASC->SetNumericAttributeBase(UDsAttributeSet::GetHealthAttribute(), F.Player->GetAttributeSet()->GetMaxHealth() * .5f);
+  TestTrue(TEXT("피해 즉시 체력 게이지 감소"), FMath::IsNearlyEqual(Widget->GetHealthFill(), .5f));
+  TestEqual(TEXT("피해 잔상은 잠시 남음"), Widget->GetHealthTrail(), 1.f);
+  TestFalse(TEXT("진입 전 보스 패널 숨김"), Widget->IsBossPanelVisible());
+  F.Enter();
+  TestTrue(TEXT("전투 진입 시 보스 패널"), Widget->IsBossPanelVisible());
+  F.Boss->GetAttributes()->SetHealth(1000.f);
+  TestTrue(TEXT("보스 체력 게이지"), FMath::IsNearlyEqual(Widget->GetBossFill(), .5f));
+  TestFalse(TEXT("전투 중 결과 띠 숨김"), Widget->IsResultVisible());
+  ASC->ApplyDamage(ASC, 100000.f, 0.f, F.Boss);
+  TestTrue(TEXT("사망 결과 띠"), Widget->IsResultVisible());
+  TestEqual(TEXT("사망 제목"), Widget->GetResultTitle().ToString(), FString(TEXT("YOU DIED")));
+  TestFalse(TEXT("사망 때 보스 패널 숨김"), Widget->IsBossPanelVisible());
+  Widget->SetViewModel(nullptr);
   return true;
 }
 #endif

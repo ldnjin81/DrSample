@@ -16,6 +16,9 @@
 #include "Characters/DsCharacter.h"
 #include "Boss/DsBossCharacter.h"
 #include "Components/Slider.h"
+#include "Theme/DrUIStyle.h"
+#include "Theme/DrUITheme.h"
+#include "Theme/DrUIThemeSubsystem.h"
 #include "Editor.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -131,7 +134,36 @@ bool FDrMenuSettingsTest::RunTest(const FString&) {
   return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FDrMenuThemeTest, "DrSample.UI.Menu.ThemeSelection",
+  EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FDrMenuThemeTest::RunTest(const FString&) {
+  // 밝기에 맞는 테마 id 고르기(없으면 그 스타일의 첫 테마).
+  const TArray<FName> Pair = {TEXT("a-light"), TEXT("a-dark")};
+  TestEqual(TEXT("어둡게"), UDsSettingsMenuWidget::PickThemeId(Pair, TEXT("a"), 1), FName(TEXT("a-dark")));
+  TestEqual(TEXT("밝게"), UDsSettingsMenuWidget::PickThemeId(Pair, TEXT("a"), 0), FName(TEXT("a-light")));
+  TestEqual(TEXT("밝기 테마가 없으면 첫 테마"), UDsSettingsMenuWidget::PickThemeId({TEXT("b-night")}, TEXT("b"), 0), FName(TEXT("b-night")));
+  TestEqual(TEXT("테마 없음"), UDsSettingsMenuWidget::PickThemeId({}, TEXT("c"), 0), FName(NAME_None));
+
+  // 실제 스타일 플러그인으로 전환·저장. 샘플은 DrUIGlass와 게임 스타일들을 켠다.
+  const auto& Styles = DrUIStyle::GetLoadedStyles();
+  if (!TestTrue(TEXT("스타일 플러그인 로드"), Styles.Num() > 1)) return false;
+  TestTrue(TEXT("기본 스타일(다크 판타지) 로드"), Styles.ContainsByPredicate([](const FDrUIStyleInfo& Info) { return Info.Id == TEXT("darkfantasy"); }));
+  auto* Themes = UDrUIThemeSubsystem::Get();
+  auto* Settings = UDsGameUserSettings::Get();
+  if (!TestNotNull(TEXT("테마 서브시스템"), Themes) || !TestNotNull(TEXT("사용자 설정"), Settings)) return false;
+  const FName OldTheme = Themes->GetTheme().ThemeId;
+  const FName OldSaved = Settings->GetUITheme();
+  auto* Widget = NewObject<UDsSettingsMenuWidget>();
+  const int32 Index = Styles.Num() - 1;
+  TestTrue(TEXT("스타일 전환"), Widget->SelectTheme(Index, 0));
+  const FName Expected = UDsSettingsMenuWidget::PickThemeId(Styles[Index].ThemeIds, Styles[Index].Id, 0);
+  TestEqual(TEXT("현재 테마"), Themes->GetTheme().ThemeId, Expected);
+  TestEqual(TEXT("사용자 설정에 저장"), Settings->GetUITheme(), Expected);
+  TestFalse(TEXT("없는 스타일은 무시"), Widget->SelectTheme(Styles.Num(), 0));
+  Themes->SetTheme(OldTheme);
+  Settings->SetUITheme(OldSaved);
+  Settings->SaveSettings();
+  return true;
+}
+
 #endif
-
-
-

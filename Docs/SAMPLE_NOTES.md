@@ -29,13 +29,17 @@
 
 ## 검증
 
-- `Automation RunTests DrFramework+DrSample`: 76개(기반 8, 샘플 68). `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동 → 공격 명중·피격 → 적 추적·반격·플레이어 피격 → 적 사망을 실제 BP·몽타주로 검증한다.
+- `Automation RunTests DrFramework+DrSample`: 79개(기반 8, 샘플 71). `+DrTable`을 붙이면 98개. `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동 → 공격 명중·피격 → 적 추적·반격·플레이어 피격 → 적 사망을 실제 BP·몽타주로 검증한다.
 - 화면 확인: `-RenderOffscreen -ResX=1280 -ResY=720`으로 같은 테스트를 실행하면 `Saved/Screenshots/DrSample/`에 장면 4장(대기·명중·피격·사망)을 테스트 전용 사선 카메라로 남긴다.
 - `-ExecCmds`에는 `Automation RunTests …`만 쓴다. `Automation List; Automation RunTests …`처럼 `Automation` 접두사를 두 번 쓰면 두 번째 명령이 잘못 해석돼 테스트가 0개 실행된다.
 
 ## 알려진 한계
 
-- 사운드·별도 FX·메뉴 화면 콘텐츠는 없다. 해당 기능은 대체 동작(무음, 기본 연출)을 쓴다.
+- 메뉴·HUD는 에셋 없이 DrUIKit 부품과 스타일 토큰으로 그린다(머티리얼·문자열 테이블 불필요). 화면 확인은 `-RenderOffscreen`으로 `DrSample.UI.Snapshot.MenusAndHUD`를 돌려 `Saved/Screenshots/DrSample/UI/`의 PNG를 본다. 이 캡처에서는 키보드 키 모양(Kenney 이미지)이 빈 칸으로 나온다(DrUIKit `UDrKeyGlyph`, 실제 화면은 따로 확인 필요).
+- 저장소에 없는 데이터 에셋은 대체 동작을 쓴다. GameAssets 테이블에 줄이 없어 시작·테스트 로그에 경고가 남는다.
+  - `DA_Audio`(사운드·컨트롤 버스): 없음 → 무음. Lyra에 효과음이 있으나 가져오기 목록(`epic_content_manifest.txt`)에 넣지 않았다.
+  - `DA_CombatFeel`(락온·타격 정지·셰이크 수치), `CombatFX`(전투 FX): 없음 → 클래스 기본값(`GetDefault`).
+  - `AM_Deflect_InPlace`(막기 몽타주): 없음 → 막기는 판정만 하고 애니메이션은 없다.
 - 적은 보스 시스템(`ADsBossCharacter`)을 재사용한다. 공격·사망은 보스 시퀀스 경로를, 일반 피격 반응만 샘플 파생 클래스(`ADsSampleEnemy`)가 공격 방향(앞·뒤·좌·우)에 맞춰 재생한다. 사망한 적은 피격 몽타주를 재생하지 않는다.
 - 헤드리스 이동 테스트는 EnhancedInput Move 액션을 주입하며 실제 키 입력은 넣지 않는다.
 - Rider에서는 `DrSample.uproject`로 연다. 생성된 `.sln/.slnx`로 열면 include 경로가 Windows 환경 변수 길이 제한(32,767자)을 넘어 MSBuild가 "환경 변수 이름 또는 값이 너무 깁니다" 오류로 멈춘다.

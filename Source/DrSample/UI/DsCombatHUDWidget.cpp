@@ -1,166 +1,141 @@
 #include "UI/DsCombatHUDWidget.h"
-#include "TableData/DsGameAssets.h"
 
 #include "UI/DsCombatHUDViewModel.h"
 #include "Combat/DsLockOnTargetComponent.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Blueprint/WidgetTree.h"
-#include "Components/BackgroundBlur.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
+#include "Components/Border.h"
+#include "Components/BorderSlot.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Engine/World.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Materials/MaterialInterface.h"
-#include "Styling/CoreStyle.h"
-#include "TimerManager.h"
 #include "Input/CommonUIInputTypes.h"
+#include "Theme/DrUITheme.h"
+#include "Theme/DrUIThemeSubsystem.h"
+#include "TimerManager.h"
+#include "Widgets/DrStatus.h"
+#include "Widgets/DrSurface.h"
+#include "Widgets/DrText.h"
+
+#define LOCTEXT_NAMESPACE "DrHUD"
 
 TOptional<FUIInputConfig> UDsCombatHUDWidget::GetDesiredInputConfig() const {
   return FUIInputConfig(ECommonInputMode::Game, EMouseCaptureMode::CapturePermanently_IncludingInitialMouseDown);
 }
 
 namespace {
-void Place(UCanvasPanel *Parent, UWidget *Child, FVector2D Position, FVector2D Size,
-           FVector2D Anchor = FVector2D::ZeroVector, FVector2D Alignment = FVector2D::ZeroVector) {
-  auto *Slot = Parent->AddChildToCanvas(Child);
+UCanvasPanelSlot* Place(UCanvasPanel* Parent, UWidget* Child, FVector2D Position, FVector2D Size,
+    FVector2D Anchor = FVector2D::ZeroVector, FVector2D Alignment = FVector2D::ZeroVector) {
+  auto* Slot = Parent->AddChildToCanvas(Child);
   Slot->SetAnchors(FAnchors(Anchor.X, Anchor.Y));
   Slot->SetAlignment(Alignment);
   Slot->SetPosition(Position);
   Slot->SetSize(Size);
-}
-void Fill(UOverlay *Parent, UWidget *Child) {
-  auto *Slot = Parent->AddChildToOverlay(Child);
-  Slot->SetHorizontalAlignment(HAlign_Fill);
-  Slot->SetVerticalAlignment(VAlign_Fill);
+  return Slot;
 }
 }
 
-UCanvasPanel *UDsCombatHUDWidget::MakePanel(UCanvasPanel *Root, FName Name, FVector2D Position,
-    FVector2D Size, FVector2D Anchor, FVector2D Alignment, FLinearColor Tint, float Radius) {
-  auto *Layers = WidgetTree->ConstructWidget<UOverlay>();
-  Place(Root, Layers, Position, Size, Anchor, Alignment);
-  auto *Shadow = WidgetTree->ConstructWidget<UImage>();
-  if (auto *Material = LoadObject<UMaterialInterface>(nullptr, *DsGameAssets::Path(TEXT("M_UI_Glass")).ToString())) {
-    auto *Instance = UMaterialInstanceDynamic::Create(Material, this);
-    Instance->SetVectorParameterValue(TEXT("PanelSize"), FLinearColor(Size.X + 24, Size.Y + 24, 0));
-    Instance->SetScalarParameterValue(TEXT("CornerRadius"), Radius);
-    Instance->SetScalarParameterValue(TEXT("ShadowOnly"), 1.f);
-    Shadow->SetBrushFromMaterial(Instance);
-    PanelMaterials.Add(Instance);
+UDrSurface* UDsCombatHUDWidget::MakePanel(UCanvasPanel* Root, FVector2D Position, FVector2D Size, FVector2D Anchor, FVector2D Alignment) {
+  auto* Panel = WidgetTree->ConstructWidget<UDrSurface>();
+  Panel->RadiusToken = TEXT("radius-lg");
+  Panel->PaddingToken = TEXT("space-4");
+  Panel->SetElevation(DrUITokens::ShadowGlass);
+  Place(Root, Panel, Position, Size, Anchor, Alignment);
+  return Panel;
+}
+
+UDsCombatHUDWidget::FGauge UDsCombatHUDWidget::MakeGauge(UPanelWidget* Parent, FName FillToken, float Thickness) {
+  // 아래 막대 = 잔상(피해 직후 잠시 남았다가 따라감), 위 막대 = 현재 값. 위 막대의 트랙(hairline)은 반투명이라 잔상이 비친다.
+  auto* Layers = WidgetTree->ConstructWidget<UOverlay>();
+  FGauge Gauge;
+  Gauge.Trail = WidgetTree->ConstructWidget<UDrProgressBar>();
+  Gauge.Trail->FillToken = TEXT("ember");
+  Gauge.Fill = WidgetTree->ConstructWidget<UDrProgressBar>();
+  Gauge.Fill->FillToken = FillToken;
+  for (UDrProgressBar* Bar : {Gauge.Trail.Get(), Gauge.Fill.Get()}) {
+    Bar->Thickness = Thickness;
+    Bar->SetPercent(1.f);
+    if (auto* S = Layers->AddChildToOverlay(Bar)) { S->SetHorizontalAlignment(HAlign_Fill); S->SetVerticalAlignment(VAlign_Center); }
   }
-  Fill(Layers, Shadow);
-  if (Name == TEXT("ResultPanel")) Shadow->SetVisibility(ESlateVisibility::Collapsed);
-  CastChecked<UOverlaySlot>(Shadow->Slot)->SetPadding(FMargin(-12));
-  Shadow->SetRenderTranslation(FVector2D(0, 6));
-  auto *Blur = WidgetTree->ConstructWidget<UBackgroundBlur>();
-  Blur->SetBlurStrength(28.6f);
-  Blur->SetCornerRadius(FVector4(Radius, Radius, Radius, Radius));
-  Fill(Layers, Blur);
-  // 띠는 알파 페이드 재질만 사용해 블러의 직선 경계가 남지 않게 한다.
-  if (Name == TEXT("ResultPanel")) Blur->SetVisibility(ESlateVisibility::Collapsed);
-  auto *Glass = WidgetTree->ConstructWidget<UImage>();
-  if (auto *Material = LoadObject<UMaterialInterface>(nullptr, *DsGameAssets::Path(TEXT("M_UI_Glass")).ToString())) {
-    auto *Instance = UMaterialInstanceDynamic::Create(Material, this);
-    Instance->SetVectorParameterValue(TEXT("PanelSize"), FLinearColor(Size.X, Size.Y, 0.f));
-    Instance->SetVectorParameterValue(TEXT("Tint"), Tint);
-    Instance->SetScalarParameterValue(TEXT("CornerRadius"), Radius);
-    if (Name == TEXT("ResultPanel")) {
-      Instance->SetScalarParameterValue(TEXT("FillOpacity"), .6f);
-      Instance->SetScalarParameterValue(TEXT("ResultBand"), 1.f);
-    }
-    Glass->SetBrushFromMaterial(Instance);
-    PanelMaterials.Add(Instance);
-  } else Glass->SetColorAndOpacity(FLinearColor(Tint.R, Tint.G, Tint.B, .1f));
-  Fill(Layers, Glass);
-  auto *Contents = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), Name);
-  Fill(Layers, Contents);
-  return Contents;
-}
-
-UMaterialInstanceDynamic *UDsCombatHUDWidget::MakeGauge(UCanvasPanel *Panel, FName Name,
-    FVector2D Position, FVector2D Size, const TCHAR *MaterialPath) {
-  auto *Image = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), Name);
-  Place(Panel, Image, Position, Size);
-  auto *Parent = LoadObject<UMaterialInterface>(nullptr, MaterialPath);
-  if (!Parent) return nullptr;
-  auto *Instance = UMaterialInstanceDynamic::Create(Parent, this);
-  Instance->SetVectorParameterValue(TEXT("PanelSize"), FLinearColor(Size.X, Size.Y, 0.f));
-  Instance->SetScalarParameterValue(TEXT("CornerRadius"), Size.Y * .5f);
-  Image->SetBrushFromMaterial(Instance);
-  return Instance;
-}
-
-UTextBlock *UDsCombatHUDWidget::MakeText(UCanvasPanel *Panel, FName Name, const FText &Text,
-    FVector2D Position, FVector2D Size, int32 FontSize, ETextJustify::Type Justification) {
-  auto *Label = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), Name);
-  Label->SetText(Text);
-  auto Font = FCoreStyle::GetDefaultFontStyle(TEXT("Light"), FontSize);
-  Label->SetFont(Font);
-  Label->SetColorAndOpacity(FSlateColor(FLinearColor(.96f, .97f, 1.f)));
-  Label->SetShadowOffset(FVector2D(0.f, 1.f));
-  Label->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, .5f));
-  Label->SetJustification(Justification);
-  Place(Panel, Label, Position, Size);
-  return Label;
+  if (auto* Box = Cast<UVerticalBox>(Parent)) {
+    if (auto* S = Box->AddChildToVerticalBox(Layers)) S->SetPadding(FMargin(0, 4));
+  } else Parent->AddChild(Layers);
+  return Gauge;
 }
 
 TSharedRef<SWidget> UDsCombatHUDWidget::RebuildWidget() {
   if (!WidgetTree) WidgetTree = NewObject<UWidgetTree>(this, TEXT("WidgetTree"));
   if (!WidgetTree->RootWidget || WidgetTree->RootWidget->GetFName() != TEXT("HUDRoot")) {
-    PanelMaterials.Reset();
-    auto *Root = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("HUDRoot"));
+    auto* Root = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("HUDRoot"));
     WidgetTree->RootWidget = Root;
-    LockOnMarker = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("LockOnMarker"));
-    Place(Root, LockOnMarker, FVector2D::ZeroVector, FVector2D(24, 24), FVector2D::ZeroVector, FVector2D(.5f, .5f));
-    if (auto* Material = LoadObject<UMaterialInterface>(nullptr, *DsGameAssets::Path(TEXT("M_UI_Glass")).ToString())) {
-      auto* Instance = UMaterialInstanceDynamic::Create(Material, this);
-      Instance->SetVectorParameterValue(TEXT("PanelSize"), FLinearColor(24, 24, 0));
-      Instance->SetVectorParameterValue(TEXT("Tint"), FLinearColor(.65f, .12f, .15f));
-      Instance->SetScalarParameterValue(TEXT("CornerRadius"), 12.f);
-      Instance->SetScalarParameterValue(TEXT("RimStrength"), 4.f);
-      Instance->SetScalarParameterValue(TEXT("FillOpacity"), .24f);
-      LockOnMarker->SetBrushFromMaterial(Instance);
-      PanelMaterials.Add(Instance);
-    }
-    LockOnMarker->SetVisibility(ESlateVisibility::Collapsed);
     SetVisibility(ESlateVisibility::HitTestInvisible);
-    // 엔진 기본 ShortestSide DPI 곡선: 1080p=1, 720p≈2/3.
-    auto *PlayerPanel = MakePanel(Root, TEXT("PlayerPanel"), FVector2D(40, 40), FVector2D(420, 76),
-        FVector2D(0, 0), FVector2D(0, 0), FLinearColor(.85f, .9f, 1.f), 38.f);
-    HealthMaterial = MakeGauge(PlayerPanel, TEXT("HealthGauge"), FVector2D(24, 22), FVector2D(372, 12),
-        *DsGameAssets::Path(TEXT("MI_UI_Health")).ToString());
-    StaminaMaterial = MakeGauge(PlayerPanel, TEXT("StaminaGauge"), FVector2D(24, 46), FVector2D(372, 8),
-        *DsGameAssets::Path(TEXT("MI_UI_Stamina")).ToString());
-    BossPanel = MakePanel(Root, TEXT("BossPanel"), FVector2D(0, -42), FVector2D(800, 96),
-        FVector2D(.5f, 1.f), FVector2D(.5f, 1.f), FLinearColor(.7f, .3f, .35f), 48.f);
-    BossNameText = MakeText(BossPanel, TEXT("BossName"), FText::GetEmpty(), FVector2D(24, 14), FVector2D(752, 32), 21, ETextJustify::Center);
-    BossMaterial = MakeGauge(BossPanel, TEXT("BossGauge"), FVector2D(28, 60), FVector2D(744, 16),
-        *DsGameAssets::Path(TEXT("MI_UI_Boss")).ToString());
-    ResultPanel = MakePanel(Root, TEXT("ResultPanel"), FVector2D(0, 0), FVector2D(1920, 180),
-        FVector2D(.5f, .5f), FVector2D(.5f, .5f), FLinearColor::Black, 0.f);
-    auto *ResultSlot = CastChecked<UCanvasPanelSlot>(ResultPanel->GetParent()->Slot);
+    LockOnMarker = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("LockOnMarker"));
+    Place(Root, LockOnMarker, FVector2D::ZeroVector, FVector2D(18, 18), FVector2D::ZeroVector, FVector2D(.5f, .5f));
+    LockOnMarker->SetVisibility(ESlateVisibility::Collapsed);
+
+    // 플레이어: 왼쪽 위 체력·기력(1920 기준, 엔진 기본 DPI 곡선으로 해상도에 맞춰 줄어든다).
+    auto* PlayerPanel = MakePanel(Root, FVector2D(40, 40), FVector2D(420, 64), FVector2D::ZeroVector, FVector2D::ZeroVector);
+    auto* PlayerColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+    PlayerPanel->SetContent(PlayerColumn);
+    const FGauge Health = MakeGauge(PlayerColumn, DrUITokens::Danger, 10.f);
+    HealthTrailBar = Health.Trail; HealthBar = Health.Fill;
+    const FGauge Stamina = MakeGauge(PlayerColumn, DrUITokens::Success, 6.f);
+    StaminaTrailBar = Stamina.Trail; StaminaBar = Stamina.Fill;
+    StaminaTrailBar->SetVisibility(ESlateVisibility::Collapsed);  // 기력은 잔상 없이 바로 따라간다.
+
+    // 보스: 아래 가운데 이름 + 체력.
+    BossPanel = MakePanel(Root, FVector2D(0, -42), FVector2D(800, 92), FVector2D(.5f, 1.f), FVector2D(.5f, 1.f));
+    auto* BossColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+    BossPanel->SetContent(BossColumn);
+    BossNameText = WidgetTree->ConstructWidget<UDrText>();
+    BossNameText->SetTokens(TEXT("title"), DrUITokens::Ink);
+    BossNameText->SetJustification(ETextJustify::Center);
+    if (auto* S = BossColumn->AddChildToVerticalBox(BossNameText)) { S->SetHorizontalAlignment(HAlign_Center); S->SetPadding(FMargin(0, 0, 0, 6)); }
+    const FGauge Boss = MakeGauge(BossColumn, DrUITokens::Danger, 12.f);
+    BossTrailBar = Boss.Trail; BossBar = Boss.Fill;
+
+    // 결과 띠: 화면 가운데 전체 폭, 테마의 막(scrim) 위에 큰 제목과 안내.
+    ResultPanel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("ResultPanel"));
+    auto* ResultSlot = Root->AddChildToCanvas(ResultPanel);
     ResultSlot->SetAnchors(FAnchors(0, .5f, 1, .5f));
+    ResultSlot->SetAlignment(FVector2D(0, .5f));
     ResultSlot->SetOffsets(FMargin(0, 0, 0, 180));
-    ResultTitle = MakeText(ResultPanel, TEXT("ResultTitle"), FText::GetEmpty(), FVector2D(24, 12), FVector2D(1872, 112), 72, ETextJustify::Center);
-    auto Font = ResultTitle->GetFont();
-    Font.LetterSpacing = 180;
-    Font.OutlineSettings = FFontOutlineSettings(2, FLinearColor(.25f, .005f, .005f, .3f));
-    ResultTitle->SetFont(Font);
-    ResultTitle->SetShadowOffset(FVector2D(0, 0));
-    ResultSubtitle = MakeText(ResultPanel, TEXT("ResultSubtitle"), FText::GetEmpty(), FVector2D(24, 138), FVector2D(1872, 32), 16, ETextJustify::Center);
-    ResultSubtitle->SetColorAndOpacity(FSlateColor(FLinearColor(1, 1, 1, .8f)));
-    for (auto *Text : {ResultTitle.Get(), ResultSubtitle.Get()}) {
-      auto *TextSlot = CastChecked<UCanvasPanelSlot>(Text->Slot);
-      TextSlot->SetAnchors(FAnchors(0, 0, 1, 0));
-      const auto Offsets = TextSlot->GetOffsets();
-      TextSlot->SetOffsets(FMargin(24, Offsets.Top, 24, Offsets.Bottom));
-    }
+    auto* ResultColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+    ResultPanel->SetContent(ResultColumn);
+    ResultPanel->SetHorizontalAlignment(HAlign_Fill);
+    ResultPanel->SetVerticalAlignment(VAlign_Center);
+    ResultTitle = WidgetTree->ConstructWidget<UTextBlock>();
+    ResultTitle->SetJustification(ETextJustify::Center);
+    if (auto* S = ResultColumn->AddChildToVerticalBox(ResultTitle)) S->SetHorizontalAlignment(HAlign_Center);
+    ResultSubtitle = WidgetTree->ConstructWidget<UDrText>();
+    ResultSubtitle->SetTokens(DrUITokens::Body, DrUITokens::InkMuted);
+    ResultSubtitle->SetJustification(ETextJustify::Center);
+    if (auto* S = ResultColumn->AddChildToVerticalBox(ResultSubtitle)) { S->SetHorizontalAlignment(HAlign_Center); S->SetPadding(FMargin(0, 8, 0, 0)); }
+    ResultPanel->SetVisibility(ESlateVisibility::Collapsed);
+    BossPanel->SetVisibility(ESlateVisibility::Collapsed);
+    ApplyTheme(UDrUIThemeSubsystem::Current());
   }
   return Super::RebuildWidget();
+}
+
+void UDsCombatHUDWidget::ApplyTheme(const UDrUITheme& Theme) {
+  // DrUIKit 부품은 스스로 테마를 따른다. 여기서는 엔진 위젯(결과 띠·큰 제목·락온 점)만 칠한다.
+  if (LockOnMarker) LockOnMarker->SetBrush(FSlateRoundedBoxBrush(Theme.GetColor(DrUITokens::Danger), 9.f, Theme.GetColor(DrUITokens::Ink), 2.f, FVector2D(18)));
+  if (ResultPanel) ResultPanel->SetBrushColor(Theme.GetColor(TEXT("scrim")));
+  if (ResultTitle) {
+    FSlateFontInfo Font = Theme.MakeFont(TEXT("display"));
+    Font.Size = 56;
+    Font.LetterSpacing = 180;
+    ResultTitle->SetFont(Font);
+  }
+  Refresh();
 }
 
 void UDsCombatHUDWidget::NativeTick(const FGeometry& Geometry, float DeltaTime) {
@@ -197,12 +172,16 @@ void UDsCombatHUDWidget::Subscribe() {
 
 void UDsCombatHUDWidget::NativeConstruct() {
   Super::NativeConstruct();
+  if (auto* Themes = UDrUIThemeSubsystem::Get(); Themes && !ThemeHandle.IsValid())
+    ThemeHandle = Themes->OnThemeChanged.AddUObject(this, &ThisClass::ApplyTheme);
   Subscribe();
   Refresh();
 }
 
 void UDsCombatHUDWidget::NativeDestruct() {
   if (ViewModel) ViewModel->RemoveAllFieldValueChangedDelegates(this);
+  if (auto* Themes = UDrUIThemeSubsystem::Get()) Themes->OnThemeChanged.Remove(ThemeHandle);
+  ThemeHandle.Reset();
   if (GetWorld()) {
     GetWorld()->GetTimerManager().ClearTimer(FadeTimer);
     GetWorld()->GetTimerManager().ClearTimer(DamageTrailTimer);
@@ -213,9 +192,9 @@ void UDsCombatHUDWidget::NativeDestruct() {
 
 void UDsCombatHUDWidget::Refresh() {
   if (!ViewModel || !ResultPanel) return;
-  if (HealthMaterial) HealthMaterial->SetScalarParameterValue(TEXT("FillRate"), ViewModel->GetPlayerHealthRate());
-  if (StaminaMaterial) StaminaMaterial->SetScalarParameterValue(TEXT("FillRate"), ViewModel->GetPlayerStaminaRate());
-  if (BossMaterial) BossMaterial->SetScalarParameterValue(TEXT("FillRate"), ViewModel->BossHealthRate);
+  HealthBar->SetPercent(ViewModel->GetPlayerHealthRate());
+  StaminaBar->SetPercent(ViewModel->GetPlayerStaminaRate());
+  BossBar->SetPercent(ViewModel->BossHealthRate);
   if (GetWorld()) {
     const double Now = GetWorld()->GetTimeSeconds();
     HealthTrail.SetTarget(ViewModel->GetPlayerHealthRate(), Now);
@@ -224,23 +203,20 @@ void UDsCombatHUDWidget::Refresh() {
     if ((HealthTrail.bActive || BossTrail.bActive) && !GetWorld()->GetTimerManager().IsTimerActive(DamageTrailTimer))
       GetWorld()->GetTimerManager().SetTimer(DamageTrailTimer, this, &ThisClass::AdvanceDamageTrails, .02f, true);
   }
-  // 컨텐츠 패널의 부모가 블러와 유리까지 포함하는 실제 패널이다.
-  BossPanel->GetParent()->SetVisibility(ViewModel->BossVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+  BossPanel->SetVisibility(ViewModel->BossVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
   BossNameText->SetText(ViewModel->BossDisplayName);
   const bool bShow = ViewModel->IsPlayerDead() || ViewModel->IsVictory();
-  ResultPanel->GetParent()->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+  ResultPanel->SetVisibility(bShow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
   if (bShow) {
     const bool bDead = ViewModel->IsPlayerDead();
-    ResultTitle->SetText(bDead ? FText::FromString(TEXT("YOU DIED")) : NSLOCTEXT("DrHUD", "Victory", "적을 쓰러뜨렸다"));
-    ResultTitle->SetColorAndOpacity(FSlateColor(bDead ? FLinearColor::FromSRGBColor(FColor(176, 30, 30)) : FLinearColor(1.f, .78f, .32f)));
-    auto Font = ResultTitle->GetFont();
-    Font.OutlineSettings.OutlineColor = bDead ? FLinearColor(.25f, .005f, .005f, .3f) : FLinearColor(.3f, .18f, .02f, .3f);
-    ResultTitle->SetFont(Font);
-    ResultSubtitle->SetText(bDead ? NSLOCTEXT("DrHUD", "Retry", "곧 체크포인트에서 다시 시작합니다") : FText::GetEmpty());
+    const UDrUITheme& Theme = UDrUIThemeSubsystem::Current();
+    ResultTitle->SetText(bDead ? LOCTEXT("Died", "YOU DIED") : LOCTEXT("Victory", "적을 쓰러뜨렸다"));
+    ResultTitle->SetColorAndOpacity(FSlateColor(Theme.GetColor(bDead ? DrUITokens::Danger : DrUITokens::Warning)));
+    ResultSubtitle->SetText(bDead ? LOCTEXT("Retry", "곧 체크포인트에서 다시 시작합니다") : FText::GetEmpty());
   }
   if (bShow && !bResultShown && GetWorld()) {
     FadeStart = GetWorld()->GetTimeSeconds();
-    ResultPanel->GetParent()->SetRenderOpacity(0.f);
+    ResultPanel->SetRenderOpacity(0.f);
     GetWorld()->GetTimerManager().SetTimer(FadeTimer, this, &ThisClass::AdvanceFade, .02f, true);
   } else if (!bShow && GetWorld()) GetWorld()->GetTimerManager().ClearTimer(FadeTimer);
   bResultShown = bShow;
@@ -249,7 +225,7 @@ void UDsCombatHUDWidget::Refresh() {
 void UDsCombatHUDWidget::AdvanceFade() {
   if (!GetWorld() || !ResultPanel) return;
   const float Alpha = FMath::Clamp(static_cast<float>((GetWorld()->GetTimeSeconds() - FadeStart) / .65), 0.f, 1.f);
-  ResultPanel->GetParent()->SetRenderOpacity(Alpha);
+  ResultPanel->SetRenderOpacity(Alpha);
   if (Alpha >= 1.f) GetWorld()->GetTimerManager().ClearTimer(FadeTimer);
 }
 
@@ -258,7 +234,16 @@ void UDsCombatHUDWidget::AdvanceDamageTrails() {
   const double Now = GetWorld()->GetTimeSeconds();
   HealthTrail.Advance(Now);
   BossTrail.Advance(Now);
-  if (HealthMaterial) HealthMaterial->SetScalarParameterValue(TEXT("DelayedRate"), HealthTrail.Value);
-  if (BossMaterial) BossMaterial->SetScalarParameterValue(TEXT("DelayedRate"), BossTrail.Value);
+  if (HealthTrailBar) HealthTrailBar->SetPercent(HealthTrail.Value);
+  if (BossTrailBar) BossTrailBar->SetPercent(BossTrail.Value);
   if (!HealthTrail.bActive && !BossTrail.bActive) GetWorld()->GetTimerManager().ClearTimer(DamageTrailTimer);
 }
+
+float UDsCombatHUDWidget::GetHealthFill() const { return HealthBar ? HealthBar->GetPercent() : 0.f; }
+float UDsCombatHUDWidget::GetHealthTrail() const { return HealthTrailBar ? HealthTrailBar->GetPercent() : 0.f; }
+float UDsCombatHUDWidget::GetBossFill() const { return BossBar ? BossBar->GetPercent() : 0.f; }
+bool UDsCombatHUDWidget::IsBossPanelVisible() const { return BossPanel && BossPanel->GetVisibility() != ESlateVisibility::Collapsed; }
+bool UDsCombatHUDWidget::IsResultVisible() const { return ResultPanel && ResultPanel->GetVisibility() != ESlateVisibility::Collapsed; }
+FText UDsCombatHUDWidget::GetResultTitle() const { return ResultTitle ? ResultTitle->GetText() : FText::GetEmpty(); }
+
+#undef LOCTEXT_NAMESPACE

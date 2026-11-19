@@ -10,7 +10,7 @@
 | ADrGameMode | ADsGameMode | 기본 캐릭터·컨트롤러 지정, GameAssets.Player 로드 |
 | UDrGameUserSettings | UDsGameUserSettings | SFX·Voice·Music 저장·기본값 |
 | ACharacter(엔진) | ADsCharacter | ASC 하위 객체·IAbilitySystemInterface, 전투 속성·입력·카메라·메시·FX |
-| UDrUIMenuWidget(DrUIKit) | UDsMenuWidget → 제목/일시정지/설정 메뉴 | RebuildWidget·BuildMenu: 글래스 레이아웃·버튼·문자열·음량 슬라이더 |
+| UDrUIMenuWidget(DrUIKit) | UDsMenuWidget → 제목/일시정지/설정 메뉴 | RebuildWidget·BuildMenu: DrUIKit 표면·버튼·옵션 줄(스타일·밝기 선택기, 음량 슬라이더)·행동 안내 바 |
 | UDrUIHUDWidget(DrUIKit) | UDsCombatHUDWidget | RebuildWidget·NativeTick: 전투 게이지·표시 모델·잔상 |
 | ADrPlayerController | ADsPlayerController | OnEnterTitle·OnEnterGame(DrUIKit UI 흐름 시작, HUD 표시 모델 연결, CanOpenPauseMenu 묶기)·OnPawnChanged·RequestRestart: 사망 중 차단·체크포인트 |
 | UDrContentBase | UDsPlayerProfileContent | 메시지 ID별 프로필 응답·변경 알림 |
@@ -58,7 +58,7 @@ ADsCharacter는 기본 ASC 하위 객체 AbilitySystem을 생성·복제 설정�
 3. 테이블은 `Tools/gen_tables.ps1`(Ds 한 번 생성, `--api DRSAMPLE_API`로 행 구조체·테이블 클래스 내보내기) 뒤 DrSampleEditor를 빌드하고 `-run=DrTableBake -Input=%TEMP%/DrSample-DrTable/sample/client -Out=/Game/Data`로 굽는다. 클래스 이름이 바뀌었으면 `-Force`.
 4. 샘플 에셋은 `Tools/build_sample_content.py`가, 일시정지 입력(`IA_Pause`·`IMC_Menu`·`IMC_UI`)과 타이틀 맵 `L_Title`(게임 모드 `ADsTitleGameMode`, 패키지 기본 맵)은 그 다음 `Tools/build_ui_content.py`가 만든다. 플레이어 BP 부모는 `ADsCharacter`, 적은 `ADsSampleEnemy`, 애님 BP는 `UDsSampleAnimInstance`, 게임 모드 BP는 `ADsGameMode`, 전투 데이터는 `UDsPlayerCombatData`·`UDsBossData`다. 스크립트는 이미 있는 에셋을 재사용하므로, 부모 클래스를 바꿀 때는 Characters·Combat·Maps 폴더와 ABP·게임 모드 BP를 지우고 다시 실행한다.
 5. Lyra 가져오기 도구(`Tools/import_epic_content.ps1`)는 Lyra의 원래 패키지 경로를 보존하며, 자세한 내용은 SAMPLE_NOTES.md를 따른다. Epic 원본을 저장소에 넣지 않는다.
-6. 자동화는 `-ExecCmds="Automation RunTests DrFramework+DrSample"`로 실행한다(76개: 기반 8, 샘플 68. `+DrTable`을 붙이면 DrTableSystem 19개를 더해 95개). `Automation List;`를 앞에 붙이면 두 번째 명령이 잘못 해석돼 0개가 실행된다. `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동→공격 명중→적 추적·반격→사망을 검증하며 맵이 없으면 경고 후 건너뛴다.
+6. 자동화는 `-ExecCmds="Automation RunTests DrFramework+DrSample"`로 실행한다(79개: 기반 8, 샘플 71. `+DrTable`을 붙이면 DrTableSystem 19개를 더해 98개). `Automation List;`를 앞에 붙이면 두 번째 명령이 잘못 해석돼 0개가 실행된다. `DrSample.PIE.BasicCombat`은 `L_DrSample`에서 이동→공격 명중→적 추적·반격→사망을 검증하며 맵이 없으면 경고 후 건너뛴다.
 
 ## 기존 예시 구현의 상세 명세와 수치
 
@@ -117,7 +117,6 @@ UDataAsset               → UDsPlayerCombatData, UDsBossData, UDsCombatFeelData
 UCameraShakeBase         → UDsLightHitShake, UDsHeavyHitShake
 UDrUIHUDWidget(DrUIKit)  → UDsCombatHUDWidget
 UDrUIMenuWidget(DrUIKit) → UDsMenuWidget[A] → UDsTitleMenuWidget, UDsPauseMenuWidget, UDsSettingsMenuWidget
-UCommonButtonBase        → UDsGlassButton      (UCommonButtonStyle → UDsGlassButtonStyle)
 UMVVMViewModelBase       → UDsCombatHUDViewModel
 값 구조체: FDrMeleeStage, FDrResolvedEffect, FDr<Table>Row(생성), FDrNetPacket/Response, FDrLatencyProfile,
           FDrAttackFX, FDrHitFeedbackState, FDsHUDDamageTrail(비 USTRUCT), FDsStatFormula(정적 공식)
@@ -318,19 +317,20 @@ IncomingPoiseDamage: 무적이거나 정면 쳐내기/막기 중이면 무시. P
 - 상태 연동(이벤트 구독): `Initialize`에서 엔카운터를 의존성으로 초기화하고 `OnStateChanged`→`EncounterChanged`(음악 시작/정지/승리), `OnActorsChanged`→플레이어·보스 `OnDamaged` 구독→`PlayDamage`, `OnDoorMoving`→`MoveDoor`. 보스 두뇌는 `SetPhase`·`PlayBossAttack(Kind)`를 직접 부른다(규칙→표현). 환경 루프·원거리 효과음·발소리는 오디오 틱.
 - 몽타주 사운드 노티파이(휘두름·접촉·기합)는 에디터 라이브러리 함수가 몽타주 이름 규칙으로 재생성.
 
-## 14. UI (CommonUI + MVVM, 리퀴드 글라스)
+## 14. UI (CommonUI + MVVM, DrUIKit 스타일)
 - UI 흐름은 DrUIKit `UDrUIFlowSubsystem`(로컬 플레이어 서브시스템)이 맡는다. `ADsPlayerController::OnEnterTitle`은 `EnterTitle()`, `OnEnterGame`은 `CanOpenPauseMenu` 묶기 → `EnterGame()` → `GetHUD()`에 표시 모델 연결. 화면 층 `UDrUIRootLayout`(Game/Menu/Modal + 알림).
 - 일시정지: `UDrUIFlowSubsystem::OpenPauseMenu/ClosePauseMenu/TogglePauseMenu`, `OpenSettings`, `Back`, 입력 모드 전환. 맵 이동은 컨트롤러(`StartGame`, `ReturnToTitle`, `RestartCheckpoint` — 재시작은 일시정지 메뉴를 닫고 체크포인트로). 사망 중에는 `CanOpenPauseMenu`가 메뉴를 막는다.
-- `UDsMenuWidget`(Abstract, DrUIKit `UDrUIMenuWidget`): 입력 구성·첫 포커스·뒤로가기·키 미리보기는 기반, 샘플은 유리 패널 레이아웃과 `BuildMenu(VerticalBox)`만 구현. Title(뒤로가기 무시)·Pause·Settings(SFX/Voice/Music 슬라이더).
-- `UDsGlassButton`(`UCommonButtonBase`) + `UDsGlassButtonStyle`: 키보드·패드 포커스와 마우스 호버를 같은 유리 림 MID로 표시.
+- `UDsMenuWidget`(Abstract, DrUIKit `UDrUIMenuWidget`): 입력 구성·첫 포커스·뒤로가기·키 미리보기는 기반, 샘플은 틀(테마 `scrim` 막 + 가운데 `UDrSurface` + 아래 `UDrActionBar` '뒤로' 안내)과 `BuildMenu(VerticalBox)`만 구현. 제목은 `UDrText`(`display`), 버튼은 `UDrButton`(첫 버튼 Primary·나머지 Secondary, 첫 버튼이 첫 포커스). 문구는 `LOCTEXT`(네임스페이스 `DsMenu`). Title(뒤로가기 무시, 안내 바 없음)·Pause·Settings.
+- `UDsSettingsMenuWidget`: `UDrOptionRow` 줄 — UI 스타일(`UDrHorizontalSelector`, `DrUIStyle::GetLoadedStyles()`), 밝기(밝게/어둡게 → `<스타일>-light/-dark`, 없으면 그 스타일의 첫 테마), SFX/Voice/Music(`UDrSlider`, 0.05 단위). 고른 테마는 `UDsGameUserSettings::UITheme`에 저장하고, 다음 실행 때 DrSample 모듈이 엔진 시작 뒤(스타일 로드 다음 틱) `ApplyUITheme`로 다시 적용한다. 저장값이 없으면 `DrUIKitSettings.StartTheme`(darkfantasy-dark).
+- 스타일 플러그인(`Plugins/DrUIKit/UISample/*`)은 모두 켠다. 게임 스타일 6종이 DrUIGlass의 글꼴을 쓰므로 DrUIGlass도 켠다. 토큰만 있는 스타일 플러그인은 코드 모듈이 없어 `DrSample.Build.cs`가 그 `Tokens/`·`Images/`·`Glyphs/`를 `RuntimeDependencies`로 대신 넣는다.
 - HUD: `UDsCombatHUDViewModel`(`UMVVMViewModelBase`, FieldNotify) — PlayerHealth/Max, PlayerStamina/Max, BossVisible, BossDisplayName, BossHealthRate, EncounterState, LockOnTarget + 계산 필드 HealthRate/StaminaRate/IsPlayerDead/IsVictory. **GAS 속성 변경 델리게이트와 엔카운터 이벤트만 구독**.
-- `UDsCombatHUDWidget`: 네이티브로 레이아웃 생성(`RebuildWidget`; 파이썬에 WidgetTree 편집이 노출되지 않기 때문). 게이지는 머티리얼 MID, 락온 마커, 결과 패널(사망/승리) 페이드.
+- `UDsCombatHUDWidget`: 네이티브로 레이아웃 생성(`RebuildWidget`; 파이썬에 WidgetTree 편집이 노출되지 않기 때문). 패널은 `UDrSurface`, 게이지는 `UDrProgressBar` 두 개를 겹쳐 아래 것(`ember`)이 잔상, 위 것이 현재 값(체력·보스 `danger`, 기력 `success`), 보스 이름은 `UDrText`(`title`). 결과 띠(사망 `danger`/승리 `warning`, 테마 `display` 글꼴 56·자간 180)와 락온 점은 엔진 위젯이라 `OnThemeChanged`로 다시 칠한다. 검증용 조회(`GetHealthFill`·`GetHealthTrail`·`GetBossFill`·`IsBossPanelVisible`·`IsResultVisible`·`GetResultTitle`).
 - `FDsHUDDamageTrail`: 피해 시 목표만 내리고 .4s 대기 후 .3s 동안 따라감, 회복은 즉시.
 - `ADsTitleGameMode`: 플레이어 없이 진입로 시네 카메라(천천히 흔들림) + 타이틀 메뉴.
 
 ## 15. 검증 지원 코드
 - `DsTestFixture::FWorldFixture`: 오디오·내비·AI 없는 경량 Game 월드(고유 이름). `WarmUpTimers`(`++GFrameCounter` + `Tick(0)`).
-- 테스트 이름: `<Game>.<영역>.<하위|PIE>.<항목>`(항상 4단계, 17장). 보스 1종 버티컬 슬라이스 기준 규모 감: 약 90개(현재 91) — Boss ~18, Combat ~15, Effects ~10, Encounter ~10, Characters ~8, UI ~8, Framework ~6, FX ~6, 그 밖(Audio, Levels, Playthrough, Visual) ~9.
+- 테스트 이름: `<Game>.<영역>.<하위|PIE>.<항목>`(항상 4단계, 17장). 보스 1종 버티컬 슬라이스 기준 규모 감: 약 90개(이 샘플은 71) — Boss ~18, Combat ~15, Effects ~10, Encounter ~10, Characters ~8, UI ~8, Framework ~6, FX ~6, 그 밖(Audio, Levels, Playthrough, Visual) ~9.
 - 패키지 검증 서브시스템(명령줄로만 활성): `UDsSmokeSubsystem`(실제 메뉴·맵 전환 단계별 PASS/FAIL·캡처), `UDsPerfSubsystem`(고정 60초 카메라 경로 4구간, frame/game/gpu p95).
 
 ## 16. 확장 레시피
@@ -404,7 +404,7 @@ IncomingPoiseDamage: 무적이거나 정면 쳐내기/막기 중이면 무시. P
 - **보스 회전·정면**: `FixedTurn(현재 요, 목표 요, TurnRate×dt)`; 정면 = 전방·대상 방향 내적 ≥ cos(60°).
 - **타격감**: 공격자·피격자 모두 `CustomTimeDilation = 이전값 × 0.08`(Light .06/Heavy .12/Boss .1초, 겹치면 긴 쪽); 피격자 보이는 스켈레탈 메시에 오버레이 머티리얼 .1초; 셰이크 대상은 Boss면 피격자, 아니면 공격자(로컬 플레이어일 때만), Light는 약한 셰이크. 내려찍기는 1500 안 플레이어에게 `1 − 거리/1500` 세기. 복구는 월드 실시간.
 - **오디오**: 원거리 원샷 16~24초마다 플레이어 주변 1800~3200 반경 임의 방향; 보스 발소리는 수평 속도 > 80일 때 .65초 간격. 교전 시작 → 페이즈 1, 음악 2초 페이드인(.65), 보스 음성; 플레이어 사망 → 음악 .3으로, 사망 음성; 승리 → 3초 페이드아웃, 그 밖 .5초. 피격 소리는 매번, 음성은 생존 시만(HP ≤ 30%이면서 피해 ≥ 최대 10%면 큰 신음). 채널 음량은 컨트롤 버스 글로벌 믹스 값(.1초).
-- **HUD 배치(1920 기준)**: 플레이어 패널 (40,40) 420×76 — 체력 게이지 (24,22) 372×12, 기력 (24,46) 372×8; 보스 패널 하단 중앙 (0,−42) 800×96 — 이름 + 게이지 (28,60) 744×16; 결과 띠 전체 폭 180. 게이지 머티리얼 파라미터 `FillRate`, `DelayedRate`(잔상), `Opacity`, `ResultBand`.
+- **HUD 배치(1920 기준)**: 플레이어 패널 (40,40) 420×64 — 체력 게이지 두께 10, 기력 6(잔상 없음); 보스 패널 하단 중앙 (0,−42) 800×92 — 이름 + 게이지 두께 12; 결과 띠 전체 폭 180(테마 `scrim`), .65초 페이드인. 패널 여백 `space-4`, 모서리 `radius-lg`, 그림자 `shadow-glass`.
 - **엔카운터 문**: 열린 위치에서 문 바운드 아래로 바닥을 트레이스해 닫힌 Z를 구하고 1초 보간.
 
 # 부록 C. 테스트 명세 (다시 만든 코드가 통과해야 할 기대 결과)
@@ -473,6 +473,9 @@ IncomingPoiseDamage: 무적이거나 정면 쳐내기/막기 중이면 무시. P
 | UI.Menu.PauseInputMode | 일시정지 시 월드 정지·메뉴 입력·커서, 중복 방지, 계속하기로 복원 |
 | UI.Menu.BlockDuringDeath | 사망 중 메뉴 차단, 사망 타이머는 계속 |
 | UI.Menu.VolumePersistence | 슬라이더 → 버스 값, 설정 파일 재로드 후 유지 |
+| UI.Menu.ThemeSelection | 밝기에 맞는 테마 id 고르기, 실제 스타일 전환·사용자 설정 저장, 다크 판타지 로드 |
+| UI.CombatHUD.WidgetGauges | 위젯 트리 생성, 피해 즉시 게이지 감소·잔상 유지, 보스 패널 표시·숨김, 사망 결과 띠 |
+| UI.Snapshot.MenusAndHUD | (렌더러 있을 때만) 메뉴 3종·HUD를 테마 5종으로 PNG 저장 |
 
 ## 샘플 콘텐츠 연결과 재현
 

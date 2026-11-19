@@ -84,7 +84,8 @@ void UDsGameplayAbility_MeleeAttack::AbilityTick(float DeltaTime) {
   const FDsMeleeStage &Stage = GetStages()[StageIndex];
   const float Previous = StageElapsed;
   StageElapsed += DeltaTime;
-  if (auto* FX = GetAvatarActorFromActorInfo()->FindComponentByClass<UDsCombatFXComponent>())
+  // 틱 어빌리티는 아바타가 사라진 뒤 한 번 더 불릴 수 있다.
+  if (auto* FX = IsValid(GetAvatarActorFromActorInfo()) ? GetAvatarActorFromActorInfo()->FindComponentByClass<UDsCombatFXComponent>() : nullptr)
     FX->SetSword(StageElapsed >= Stage.ActiveStart && StageElapsed < Stage.ActiveEnd);
   // 틱 간격이 길어도 판정 구간을 건너뛰지 않게 구간 겹침으로 판단한다.
   if (Previous < Stage.ActiveEnd && StageElapsed >= Stage.ActiveStart)

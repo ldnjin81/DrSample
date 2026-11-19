@@ -38,7 +38,8 @@ void UDsGameplayAbility_Dodge::ActivateAbility(
   const FDsDodgeTuning &Tuning = UDsPlayerCombatData::Get()->Dodge;
   Elapsed = 0.f;
   ActiveDuration = Tuning.Duration;
-  if (auto* FX = GetAvatarActorFromActorInfo()->FindComponentByClass<UDsCombatFXComponent>()) FX->SetDash(true);
+  if (auto* Avatar = GetAvatarActorFromActorInfo())
+    if (auto* FX = Avatar->FindComponentByClass<UDsCombatFXComponent>()) FX->SetDash(true);
   GetDsASC()->SetLooseState(DsTags::State_Dodging, true);
   if (const ACharacter *Character =
           Cast<ACharacter>(GetAvatarActorFromActorInfo())) {

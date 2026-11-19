@@ -15,7 +15,7 @@ git clone --recurse-submodules https://github.com/ldnjin81/DrSample   # 이미 �
 | 위치 | 역할 |
 | --- | --- |
 | `Plugins/DrFramework` | git 서브모듈 — [DrFramework](https://github.com/ldnjin81/DrFramework) 플러그인(`unreal/DrFramework`) |
-| `Plugins/DrUIKit` | git 서브모듈 — [DrUIKit](https://github.com/ldnjin81/DrUIKit) UI 플러그인(`unreal/DrUIKit`). 같이 들어 있는 Glass 샘플 플러그인(DrUIGlass)은 `DrSample.uproject`에서 꺼 둔다 |
+| `Plugins/DrUIKit` | git 서브모듈 — [DrUIKit](https://github.com/ldnjin81/DrUIKit) UI 플러그인(`unreal/DrUIKit`). 같이 들어 있는 스타일 플러그인(`UISample/*`, 글래스·판타지·양피지·다크 판타지 등 11종)을 모두 켜고, 기본은 다크 판타지(`StartTheme=darkfantasy-dark`). 게임 스타일이 글꼴을 빌려 쓰는 DrUIGlass도 켠다 |
 | `Plugins/DrTableSystem` | git 서브모듈 — [DrTableSystem](https://github.com/ldnjin81/DrTableSystem) v0.12.0(플러그인은 `unreal/DrTableSystem`) |
 | `Source/DrSample` | 예시 구현(접두사 `Ds`, `DRSAMPLE_API`), PIE 검증 |
 | `Source/DrSample/Tables` | 샘플 테이블 스키마·열거형·원본 데이터(`Schemas`·`Enums`·`Data`) |
@@ -34,7 +34,7 @@ git clone --recurse-submodules https://github.com/ldnjin81/DrSample   # 이미 �
 | 테이블 | 없음(DrTableSystem 권장) | GameAssets·EffectDefs·BossPhase·BossAttack·EffectExtensions, 등록 1곳 |
 | GAS | 없음 | ASC(틱 어빌리티·상태 효과·쿨다운), 속성 세트, 스탯 공식, 피해 GE, 기력·포이즈, 근접·회피·막기 |
 | 캐릭터 | 없음 | `ADsCharacter`(ASC·입력·카메라·락온·전투 FX), 보스 |
-| UI | 없음(0.3.0부터 DrUIKit: 화면 층, 메뉴·HUD 기반, `UDrUIFlowSubsystem`, `UDrUIKitSettings`) | 타이틀·일시정지·설정 메뉴, 글래스 버튼, 전투 HUD·표시 모델 |
+| UI | 없음(0.3.0부터 DrUIKit: 화면 층, 메뉴·HUD 기반, `UDrUIFlowSubsystem`, `UDrUIKitSettings`) | 타이틀·일시정지·설정 메뉴(DrUIKit 부품, 설정에서 UI 스타일·밝기 선택·저장), 전투 HUD(DrUIKit 표면·진행 막대)·표시 모델 |
 | 검증 | 단계 등록형 스모크, 성능 표본 통계 | 스모크 단계·성능 측정 경로, PIE 전투 테스트 |
 | 전투·엔카운터·오디오·태그 | 없음 | 전부 |
 
@@ -127,12 +127,13 @@ UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-Dr
 
 ## 검증
 
-UE 5.8.2 기준 현재 상태:
+UE 5.9.0(PC, 2026-11-19) 기준 현재 상태:
 
 | 검증 | 결과 |
 | --- | --- |
 | `DrSampleEditor Win64 Development` 빌드 | 성공 |
-| `Automation RunTests DrFramework+DrSample` | 76/76 성공(기반 8, 샘플 68, PIE `DrSample.PIE.BasicCombat` 포함) |
+| `Automation RunTests DrFramework+DrSample+DrTable` | 98/98 성공(기반 8, 샘플 71, DrTable 19, PIE `DrSample.PIE.BasicCombat` 포함) |
+| `-RenderOffscreen`으로 `DrSample.UI.Snapshot.MenusAndHUD` | 메뉴 3종·HUD를 테마 5종으로 그려 `Saved/Screenshots/DrSample/UI/`에 PNG 20장(`-nullrhi`에서는 건너뜀) |
 
 패키지 검증(DrFramework `Tools/`, PC에서 SSH로 돌릴 때는 `-Offscreen`):
 

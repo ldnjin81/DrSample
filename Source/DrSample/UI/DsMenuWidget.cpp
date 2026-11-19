@@ -1,72 +1,87 @@
 #include "UI/DsMenuWidget.h"
-#include "TableData/DsGameAssets.h"
 
-#include "UI/DsGlassButton.h"
 #include "Blueprint/WidgetTree.h"
-#include "Components/BackgroundBlur.h"
-#include "Components/CanvasPanel.h"
-#include "Components/CanvasPanelSlot.h"
-#include "Components/Image.h"
+#include "Components/Border.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
-#include "Components/TextBlock.h"
+#include "Components/SizeBox.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Styling/CoreStyle.h"
-#include "Internationalization/StringTable.h"
+#include "InputCoreTypes.h"
+#include "Theme/DrUITheme.h"
+#include "Theme/DrUIThemeSubsystem.h"
+#include "Widgets/DrActionBar.h"
+#include "Widgets/DrButton.h"
+#include "Widgets/DrSurface.h"
+#include "Widgets/DrText.h"
 
-FText UDsMenuWidget::MenuText(const TCHAR* Key) {
-  // 첫 타이틀 프레임에도 문구가 보이도록 비동기 요청 전에 표를 확실히 로드한다.
-  auto* Table = LoadObject<UStringTable>(nullptr, *DsGameAssets::Path(TEXT("ST_UI")).ToString());
-  return FText::FromStringTable(Table ? Table->GetStringTableId() : NAME_None, Key);
-}
-void UDsMenuWidget::ApplyItemSpacing(UVerticalBoxSlot* LayoutSlot) {
-  LayoutSlot->SetPadding(FMargin(32, 10));
-  LayoutSlot->SetHorizontalAlignment(HAlign_Center);
-}
+#define LOCTEXT_NAMESPACE "DsMenu"
+
 TSharedRef<SWidget> UDsMenuWidget::RebuildWidget() {
   FirstFocus = nullptr;
-  auto* Root = WidgetTree->ConstructWidget<UCanvasPanel>();
+  auto* Root = WidgetTree->ConstructWidget<UOverlay>();
   WidgetTree->RootWidget = Root;
-  auto* Dim = WidgetTree->ConstructWidget<UImage>();
-  Dim->SetColorAndOpacity(FLinearColor(0, 0, 0, .25f));
-  auto* DimSlot = Root->AddChildToCanvas(Dim);
-  DimSlot->SetAnchors(FAnchors(0, 0, 1, 1)); DimSlot->SetOffsets(FMargin(0));
-  auto* Layers = WidgetTree->ConstructWidget<UOverlay>();
-  auto* PanelSlot = Root->AddChildToCanvas(Layers);
-  PanelSlot->SetAnchors(FAnchors(.5f)); PanelSlot->SetAlignment(FVector2D(.5f));
-  PanelSlot->SetAutoSize(true);
-  auto Fill = [Layers](UWidget* Child) {
-    auto* LayoutSlot = Layers->AddChildToOverlay(Child);
-    LayoutSlot->SetHorizontalAlignment(HAlign_Fill); LayoutSlot->SetVerticalAlignment(VAlign_Fill);
-  };
-  auto* Blur = WidgetTree->ConstructWidget<UBackgroundBlur>();
-  Blur->SetBlurStrength(28.f); Blur->SetCornerRadius(FVector4(36)); Fill(Blur);
-  auto* Glass = WidgetTree->ConstructWidget<UImage>();
-  if (auto* Parent = LoadObject<UMaterialInterface>(nullptr, *DsGameAssets::Path(TEXT("M_UI_Glass")).ToString())) {
-    auto* MID = UMaterialInstanceDynamic::Create(Parent, this);
-    MID->SetVectorParameterValue(TEXT("PanelSize"), FLinearColor(464, 500, 0));
-    MID->SetScalarParameterValue(TEXT("CornerRadius"), 36.f);
-    MID->SetScalarParameterValue(TEXT("FillOpacity"), .24f);
-    Glass->SetBrushFromMaterial(MID);
-  }
-  Fill(Glass);
+  Scrim = WidgetTree->ConstructWidget<UBorder>();
+  ApplyScrim();
+  if (auto* S = Root->AddChildToOverlay(Scrim)) { S->SetHorizontalAlignment(HAlign_Fill); S->SetVerticalAlignment(VAlign_Fill); }
+
+  auto* Column = WidgetTree->ConstructWidget<UVerticalBox>();
+  if (auto* S = Root->AddChildToOverlay(Column)) { S->SetHorizontalAlignment(HAlign_Center); S->SetVerticalAlignment(VAlign_Center); }
+  auto* Size = WidgetTree->ConstructWidget<USizeBox>();
+  Size->SetWidthOverride(GetPanelWidth());
+  auto* Panel = WidgetTree->ConstructWidget<UDrSurface>();
+  Panel->RadiusToken = TEXT("radius-xl");
+  Panel->PaddingToken = TEXT("space-6");
+  Panel->SetElevation(DrUITokens::ShadowGlass);
+  Size->AddChild(Panel);
+  Column->AddChildToVerticalBox(Size);
   auto* Contents = WidgetTree->ConstructWidget<UVerticalBox>();
-  Fill(Contents);
+  Panel->SetContent(Contents);
   BuildMenu(Contents);
-  return UCommonActivatableWidget::RebuildWidget();
+
+  // 아래 안내: 포커스한 부품의 행동(확인 등)과 메뉴 공통 행동(뒤로)을 키보드·패드 모양으로 보인다.
+  // 뒤로가 없는 메뉴(타이틀)는 안내할 공통 행동이 없어 바를 만들지 않는다.
+  ActionBar = nullptr;
+  if (HasBackAction()) {
+    ActionBar = WidgetTree->ConstructWidget<UDrActionBar>();
+    ActionBar->bSurface = false;
+    ActionBar->SetBaseHints({{TEXT("Back"), EKeys::Gamepad_FaceButton_Right, EKeys::Escape, LOCTEXT("HintBack", "뒤로")}});
+    if (auto* S = Column->AddChildToVerticalBox(ActionBar)) { S->SetPadding(FMargin(0, 16, 0, 0)); S->SetHorizontalAlignment(HAlign_Center); }
+  }
+  return Super::RebuildWidget();
 }
-void UDsMenuWidget::AddHeading(UVerticalBox* Contents, const TCHAR* Key) {
-  auto* Text = WidgetTree->ConstructWidget<UTextBlock>();
-  Text->SetText(MenuText(Key)); Text->SetFont(FCoreStyle::GetDefaultFontStyle(TEXT("Light"), 38));
-  auto* LayoutSlot = Contents->AddChildToVerticalBox(Text);
-  LayoutSlot->SetPadding(FMargin(32, 30, 32, 20)); LayoutSlot->SetHorizontalAlignment(HAlign_Center);
+
+void UDsMenuWidget::NativeConstruct() {
+  Super::NativeConstruct();
+  if (auto* Themes = UDrUIThemeSubsystem::Get(); Themes && !ThemeHandle.IsValid())
+    ThemeHandle = Themes->OnThemeChanged.AddWeakLambda(this, [this](const UDrUITheme&) { ApplyScrim(); });
 }
-UDsGlassButton* UDsMenuWidget::AddButton(UVerticalBox* Contents, const TCHAR* Key) {
+
+void UDsMenuWidget::NativeDestruct() {
+  if (auto* Themes = UDrUIThemeSubsystem::Get()) Themes->OnThemeChanged.Remove(ThemeHandle);
+  ThemeHandle.Reset();
+  Super::NativeDestruct();
+}
+
+void UDsMenuWidget::ApplyScrim() {
+  if (Scrim) Scrim->SetBrushColor(UDrUIThemeSubsystem::Current().GetColor(TEXT("scrim")));
+}
+
+void UDsMenuWidget::AddHeading(UVerticalBox* Contents, const FText& Text) {
+  auto* Title = WidgetTree->ConstructWidget<UDrText>();
+  Title->SetTokens(TEXT("display"), DrUITokens::Ink);
+  Title->SetText(Text);
+  if (auto* S = Contents->AddChildToVerticalBox(Title)) { S->SetPadding(FMargin(0, 4, 0, 20)); S->SetHorizontalAlignment(HAlign_Center); }
+}
+
+UDrButton* UDsMenuWidget::AddButton(UVerticalBox* Contents, const FText& Label) {
   // 위젯 트리로 만들어야 플레이어가 없는 썸네일 렌더링에서도 버튼이 생긴다.
-  auto* Button = WidgetTree->ConstructWidget<UDsGlassButton>(UDsGlassButton::StaticClass());
-  Button->SetLabel(MenuText(Key)); ApplyItemSpacing(Contents->AddChildToVerticalBox(Button));
+  auto* Button = WidgetTree->ConstructWidget<UDrButton>();
+  Button->Label = Label;
+  Button->Variant = FirstFocus ? EDrButtonVariant::Secondary : EDrButtonVariant::Primary;
+  if (auto* S = Contents->AddChildToVerticalBox(Button)) { S->SetPadding(FMargin(0, 6)); S->SetHorizontalAlignment(HAlign_Fill); }
   if (!FirstFocus) FirstFocus = Button;
   return Button;
 }
+
+#undef LOCTEXT_NAMESPACE

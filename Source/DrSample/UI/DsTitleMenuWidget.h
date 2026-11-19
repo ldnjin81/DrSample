@@ -13,4 +13,5 @@ public:
 protected:
   virtual void BuildMenu(UVerticalBox* Contents) override;
   virtual bool NativeOnHandleBackAction() override { return true; }
+  virtual bool HasBackAction() const override { return false; }
 };
