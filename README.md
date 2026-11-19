@@ -127,7 +127,7 @@ UnrealEditor-Cmd DrSample.uproject -run=DrTableBake -Input=$env:TEMP\DrSample-Dr
 
 ## 검증
 
-UE 5.9.0(PC, 2026-11-19) 기준 현재 상태:
+UE 5.9.0(PC, 2026-11-19) 기준 현재 상태. 같은 날 UE 5.8.4에서도 빌드(경고 0)·테스트 98/98을 확인했고, 플러그인 3개는 두 엔진에서 `BuildPlugin` 단독 빌드(경고·오류 0)를 통과했다. PC 정기 검증(dr-verify)이 이 확인을 매일 반복한다.
 
 | 검증 | 결과 |
 | --- | --- |
